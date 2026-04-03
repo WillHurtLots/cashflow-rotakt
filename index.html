@@ -555,17 +555,19 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 
 <!-- MODAL COMANDĂ NOUĂ -->
 <div class="modal-overlay" id="modalOverlay" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal-box" onclick="event.stopPropagation()">
+  <div class="modal-box" style="width:900px" onclick="event.stopPropagation()">
     <div class="modal-head">
       <h3>Comandă Nouă de Aprovizionare</h3>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group span2">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <!-- ROW 1: Produs full width -->
+        <div class="form-group" style="grid-column:span 3">
           <label>Produs</label>
           <input type="text" id="f-produs" placeholder="ex. MF360, Tractor 4WD...">
         </div>
+        <!-- ROW 2 -->
         <div class="form-group">
           <label>Nr. Containere</label>
           <input type="number" id="f-cont" min="1" placeholder="1">
@@ -578,6 +580,7 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
           <label>Număr Factură</label>
           <input type="text" id="f-factura" placeholder="ex. INV-2026-001">
         </div>
+        <!-- ROW 3 -->
         <div class="form-group">
           <label>Valoare Factură $</label>
           <input type="number" id="f-valoare" min="0" step="0.01" placeholder="0" oninput="calcRest()">
@@ -587,6 +590,11 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
           <input type="number" id="f-avans" min="0" step="0.01" placeholder="0" oninput="calcRest()">
         </div>
         <div class="form-group">
+          <label>Rest de Plată $ <span style="font-weight:400;color:#94a3b8">(automat)</span></label>
+          <div class="calc-display" id="f-rest-display">—</div>
+        </div>
+        <!-- ROW 4 -->
+        <div class="form-group">
           <label>Data Plată Avans</label>
           <input type="date" id="f-data-avans">
         </div>
@@ -595,9 +603,10 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
           <input type="date" id="f-data-inc">
         </div>
         <div class="form-group">
-          <label>Rest de Plată $ <span style="font-weight:400;color:#94a3b8">(calculat automat)</span></label>
-          <div class="calc-display" id="f-rest-display">—</div>
+          <label>Data Plată Diferență</label>
+          <input type="date" id="f-data-dif">
         </div>
+        <!-- ROW 5 -->
         <div class="form-group">
           <label>Status Comandă</label>
           <select id="f-status">
@@ -611,13 +620,25 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
             <option value="Anulat">Anulat</option>
           </select>
         </div>
+        <!-- Separator vizual -->
+        <div style="grid-column:span 3;border-top:1px dashed var(--border);margin:4px 0"></div>
+        <!-- ROW 6: costuri suplimentare -->
         <div class="form-group">
-          <label>Data Plată Diferență</label>
-          <input type="date" id="f-data-dif">
+          <label>Rată de Schimb RON/USD</label>
+          <input type="number" id="f-curs" min="0" step="0.0001" placeholder="ex. 4.65" oninput="calcRest()">
         </div>
         <div class="form-group">
-          <label>Echivalent RON (mii lei) = Rest $ × 4.5 ÷ 1000</label>
-          <div class="calc-display" id="f-ron-calc">—</div>
+          <label>% Taxă Vamală</label>
+          <input type="number" id="f-taxvam" min="0" max="100" step="0.01" placeholder="ex. 3" oninput="calcRest()">
+        </div>
+        <div class="form-group">
+          <label>TVA și Transport $</label>
+          <input type="number" id="f-tvatransp" min="0" step="0.01" placeholder="0" oninput="calcRest()">
+        </div>
+        <!-- ROW 7: Echivalent RON -->
+        <div class="form-group" style="grid-column:span 3">
+          <label>Echivalent RON (mii lei) <span style="font-weight:400;color:#94a3b8">= Rest $ × Rată ÷ 1000</span></label>
+          <div class="calc-display" id="f-ron-calc" style="font-size:18px">—</div>
         </div>
       </div>
     </div>
@@ -1034,7 +1055,7 @@ function restCurrent(o) {
   const paid = (o.transe || []).reduce((s, t) => s + (parseFloat(t.suma) || 0), 0);
   return val - av - paid;
 }
-function ronCalcNum(rest) { return (rest * 4.5 / 1000); }
+function ronCalcNum(rest, curs) { return (rest * (parseFloat(curs) || 4.5) / 1000); }
 
 function renderOrders() {
   const tbody   = document.getElementById('ordBody');
@@ -1046,18 +1067,19 @@ function renderOrders() {
   }
   summary.style.display = 'flex';
   const totalRest = orders.reduce((s, o) => s + restCurrent(o), 0);
+  const totalRon  = orders.reduce((s, o) => s + ronCalcNum(restCurrent(o), o.curs), 0);
   const inTranzit = orders.filter(o => o.status === 'În Tranzit').length;
   const lichidate = orders.filter(o => o.status === 'Lichidat').length;
   document.getElementById('os-total').textContent   = orders.length;
   document.getElementById('os-rest').textContent    = totalRest.toLocaleString('ro-RO', {maximumFractionDigits:0}) + ' $';
-  document.getElementById('os-ron').textContent     = ronCalcNum(totalRest).toFixed(2) + ' mii';
+  document.getElementById('os-ron').textContent     = totalRon.toFixed(2) + ' mii';
   document.getElementById('os-tranzit').textContent = inTranzit;
   document.getElementById('os-lich').textContent    = lichidate;
 
   tbody.innerHTML = orders.map((o, i) => {
     const css    = STATUS_CSS[o.status] || 'st-Comandat';
     const rest   = restCurrent(o);
-    const ron    = ronCalcNum(rest);
+    const ron    = ronCalcNum(rest, o.curs);
     const nrTr   = (o.transe || []).length;
     const btnPay = `<button class="btn-pay-row" onclick="openPayModal(${i})" title="Adaugă / Vezi plăți">
       + Plată${nrTr ? ` <span class="pay-badge">${nrTr}</span>` : ''}
@@ -1083,7 +1105,7 @@ function renderOrders() {
 
 /* ── Modal Comandă Nouă ── */
 function openModal() {
-  ['f-produs','f-cont','f-furnizor','f-factura','f-valoare','f-avans','f-data-avans','f-data-inc','f-data-dif']
+  ['f-produs','f-cont','f-furnizor','f-factura','f-valoare','f-avans','f-data-avans','f-data-inc','f-data-dif','f-curs','f-taxvam','f-tvatransp']
     .forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('f-status').value = 'Comandat';
   document.getElementById('f-rest-display').textContent = '—';
@@ -1093,11 +1115,13 @@ function openModal() {
 function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
 
 function calcRest() {
-  const val = parseFloat(document.getElementById('f-valoare').value) || 0;
-  const av  = parseFloat(document.getElementById('f-avans').value)  || 0;
-  const rest = val - av;
-  document.getElementById('f-rest-display').textContent = rest !== 0 ? rest.toLocaleString('ro-RO', {maximumFractionDigits:2}) + ' $' : '0 $';
-  document.getElementById('f-ron-calc').textContent = rest > 0 ? ronCalcNum(rest).toFixed(2) + ' mii lei' : '—';
+  const val   = parseFloat(document.getElementById('f-valoare').value)   || 0;
+  const av    = parseFloat(document.getElementById('f-avans').value)     || 0;
+  const curs  = parseFloat(document.getElementById('f-curs').value)      || 4.5;
+  const rest  = val - av;
+  document.getElementById('f-rest-display').textContent = rest.toLocaleString('ro-RO', {maximumFractionDigits:2}) + ' $';
+  const ron = (rest * curs / 1000);
+  document.getElementById('f-ron-calc').textContent = rest > 0 ? ron.toFixed(2) + ' mii lei' : '—';
 }
 
 function saveOrder() {
@@ -1114,6 +1138,9 @@ function saveOrder() {
     dataInc:    document.getElementById('f-data-inc').value,
     status:     document.getElementById('f-status').value,
     dataDif:    document.getElementById('f-data-dif').value,
+    curs:       document.getElementById('f-curs').value,
+    taxVamala:  document.getElementById('f-taxvam').value,
+    tvaTransp:  document.getElementById('f-tvatransp').value,
     transe:     [],
   });
   persistOrders();
