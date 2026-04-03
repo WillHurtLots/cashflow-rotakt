@@ -426,6 +426,13 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 }
 .btn-remove-pay:hover { background: var(--red); color: #fff; }
 
+.btn-edit-row {
+  background: none; border: 1px solid #93c5fd; color: var(--brand-dark);
+  padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: .15s; white-space: nowrap;
+}
+.btn-edit-row:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+
 .btn-pay-row {
   background: none; border: 1px solid var(--brand); color: var(--brand);
   padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 600;
@@ -570,16 +577,22 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
             <th class="th-num">Avans Plătit $</th>
             <th>Data Avans</th>
             <th>Data Încărcare</th>
+            <th class="th-num">Transport $</th>
+            <th class="th-num">% Tax. Vam.</th>
+            <th class="th-num">Val. Tax. Vam. $</th>
+            <th class="th-num">% TVA</th>
+            <th class="th-num">Val. TVA $</th>
             <th class="th-num">Rest Plată $</th>
             <th>Status</th>
             <th>Data Plată Diferență</th>
             <th class="th-num">Echivalent RON (mii)</th>
             <th>Plăți</th>
             <th></th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="ordBody">
-          <tr><td colspan="14" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>
+          <tr><td colspan="19" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>
         </tbody>
       </table>
     </div>
@@ -1113,7 +1126,7 @@ function renderOrders() {
   const tbody   = document.getElementById('ordBody');
   const summary = document.getElementById('ordSummary');
   if (!orders.length) {
-    tbody.innerHTML = '<tr><td colspan="14" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="19" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>';
     summary.style.display = 'none';
     return;
   }
@@ -1129,13 +1142,18 @@ function renderOrders() {
   document.getElementById('os-lich').textContent    = lichidate;
 
   tbody.innerHTML = orders.map((o, i) => {
-    const css    = STATUS_CSS[o.status] || 'st-Comandat';
-    const rest   = restCurrent(o);
-    const ron    = ronCalcNum(rest, o.curs);
-    const nrTr   = (o.transe || []).length;
-    const btnPay = `<button class="btn-pay-row" onclick="openPayModal(${i})" title="Adaugă / Vezi plăți">
-      + Plată${nrTr ? ` <span class="pay-badge">${nrTr}</span>` : ''}
-    </button>`;
+    const css       = STATUS_CSS[o.status] || 'st-Comandat';
+    const rest      = restCurrent(o);
+    const ron       = ronCalcNum(rest, o.curs);
+    const nrTr      = (o.transe || []).length;
+    const val       = parseFloat(o.valoare)    || 0;
+    const transport = parseFloat(o.transport)  || 0;
+    const taxPct    = parseFloat(o.taxVamalaPct)|| 0;
+    const tvaPct    = parseFloat(o.tvaPct)     || 21;
+    const taxVal    = (val + transport) * taxPct / 100;
+    const tvaVal    = (val + transport + taxVal) * tvaPct / 100;
+    const btnPay = `<button class="btn-pay-row" onclick="openPayModal(${i})" title="Adaugă / Vezi plăți">+ Plată${nrTr ? ` <span class="pay-badge">${nrTr}</span>` : ''}</button>`;
+    const btnEdit = `<button class="btn-edit-row" onclick="openEditModal(${i})">Editează</button>`;
     return `<tr>
       <td class="td-prod">${o.produs || '—'}</td>
       <td class="td-num">${o.containere || '—'}</td>
@@ -1145,11 +1163,17 @@ function renderOrders() {
       <td class="td-num">${fmtUsd(o.avans)}</td>
       <td>${fmtDate(o.dataAvans)}</td>
       <td>${fmtDate(o.dataInc)}</td>
+      <td class="td-num">${transport ? fmtUsd(transport) : '—'}</td>
+      <td class="td-num">${taxPct ? taxPct + '%' : '—'}</td>
+      <td class="td-num">${taxPct ? fmtUsd(taxVal) : '—'}</td>
+      <td class="td-num">${tvaPct}%</td>
+      <td class="td-num">${fmtUsd(tvaVal)}</td>
       <td class="td-num" style="color:${rest < 0 ? 'var(--red)' : rest === 0 ? 'var(--green)' : 'var(--text2)'};font-weight:${rest === 0 ? 700 : 400}">${fmtUsd(rest)}</td>
       <td><span class="status-badge ${css}">${o.status}</span></td>
       <td>${fmtDate(o.dataDif)}</td>
       <td class="td-ron">${rest !== 0 ? ron.toFixed(2) + ' mii' : '<span style="color:var(--green);font-weight:700">Lichidat</span>'}</td>
       <td class="td-act">${btnPay}</td>
+      <td class="td-act">${btnEdit}</td>
       <td class="td-act"><button class="btn-del-row" onclick="deleteOrder(${i})">✕</button></td>
     </tr>`;
   }).join('');
@@ -1265,6 +1289,64 @@ function deleteOrder(i) {
   orders.splice(i, 1);
   persistOrders();
   renderOrders();
+}
+
+let editIdx = null;
+function openEditModal(i) {
+  editIdx = i;
+  const o = orders[i];
+  // reuse same modal, just populate it
+  const fields = {
+    'f-produs': o.produs, 'f-cont': o.containere, 'f-furnizor': o.furnizor,
+    'f-factura': o.factura, 'f-valoare': o.valoare, 'f-avans': o.avans,
+    'f-data-avans': o.dataAvans, 'f-data-inc': o.dataInc, 'f-data-dif': o.dataDif,
+    'f-curs': o.curs, 'f-taxvam': o.taxVamalaPct, 'f-tvapct': o.tvaPct || '21',
+    'f-transport': o.transport,
+  };
+  Object.entries(fields).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
+  });
+  document.getElementById('f-status').value = o.status || 'Comandat';
+  document.getElementById('extra-payments-wrap').innerHTML = '';
+  extraPayCount = 0;
+  document.querySelector('#modalOverlay .modal-head h3').textContent = 'Editează Comanda';
+  document.querySelector('#modalOverlay .btn-save').textContent = 'Salvează Modificările';
+  document.querySelector('#modalOverlay .btn-save').onclick = saveEdit;
+  calcRest();
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+function saveEdit() {
+  if (editIdx === null) return;
+  const produs = document.getElementById('f-produs').value.trim();
+  if (!produs) { alert('Introdu numele produsului.'); return; }
+  const o = orders[editIdx];
+  o.produs    = produs;
+  o.containere= document.getElementById('f-cont').value;
+  o.furnizor  = document.getElementById('f-furnizor').value.trim();
+  o.factura   = document.getElementById('f-factura').value.trim();
+  o.valoare   = document.getElementById('f-valoare').value;
+  o.avans     = document.getElementById('f-avans').value;
+  o.dataAvans = document.getElementById('f-data-avans').value;
+  o.dataInc   = document.getElementById('f-data-inc').value;
+  o.status    = document.getElementById('f-status').value;
+  o.dataDif   = document.getElementById('f-data-dif').value;
+  o.curs      = document.getElementById('f-curs').value;
+  o.taxVamalaPct = document.getElementById('f-taxvam').value;
+  o.tvaPct    = document.getElementById('f-tvapct').value;
+  o.transport = document.getElementById('f-transport').value;
+  // append any extra payments added during edit
+  const extra = getExtraPayments();
+  if (extra.length) o.transe = (o.transe || []).concat(extra);
+  persistOrders();
+  renderOrders();
+  // reset modal back to add mode
+  document.querySelector('#modalOverlay .modal-head h3').textContent = 'Comandă Nouă de Aprovizionare';
+  document.querySelector('#modalOverlay .btn-save').textContent = 'Salvează Comanda';
+  document.querySelector('#modalOverlay .btn-save').onclick = saveOrder;
+  editIdx = null;
+  closeModal();
 }
 
 /* ── Modal Tranșe Plăți ── */
