@@ -541,7 +541,7 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 
 <!-- MODAL COMANDĂ NOUĂ -->
 <div class="modal-overlay" id="modalOverlay" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal-box">
+  <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-head">
       <h3>Comandă Nouă de Aprovizionare</h3>
       <button class="modal-close" onclick="closeModal()">×</button>
