@@ -393,6 +393,39 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
   cursor: pointer; transition: .15s;
 }
 .btn-del-row:hover { background: var(--red); color: #fff; }
+.btn-add-payment {
+  background: var(--brand); color: #fff; border: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  font-size: 16px; line-height: 1; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700; transition: .15s; flex-shrink: 0;
+  position: relative;
+}
+.btn-add-payment:hover { background: var(--brand-dark); transform: scale(1.1); }
+.btn-add-payment::after {
+  content: 'Adaugă încă o plată';
+  position: absolute; left: 28px; top: 50%; transform: translateY(-50%);
+  background: #1e2d4a; color: #fff; font-size: 11px; font-weight: 600;
+  padding: 4px 8px; border-radius: 5px; white-space: nowrap;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+  z-index: 10;
+}
+.btn-add-payment:hover::after { opacity: 1; }
+
+.extra-pay-row {
+  display: grid; grid-template-columns: 1fr 1fr auto;
+  gap: 8px; align-items: end;
+  padding: 10px 12px; background: #f8faff;
+  border: 1px solid #bfdbfe; border-radius: 8px;
+}
+.extra-pay-row .form-group { margin: 0; }
+.btn-remove-pay {
+  background: none; border: 1px solid #fca5a5; color: var(--red);
+  padding: 7px 10px; border-radius: 6px; font-size: 13px;
+  cursor: pointer; transition: .15s; height: 36px;
+}
+.btn-remove-pay:hover { background: var(--red); color: #fff; }
+
 .btn-pay-row {
   background: none; border: 1px solid var(--brand); color: var(--brand);
   padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 600;
@@ -585,19 +618,24 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
           <label>Valoare Factură $</label>
           <input type="number" id="f-valoare" min="0" step="0.01" placeholder="0" oninput="calcRest()">
         </div>
+        <!-- Avans cu buton + -->
         <div class="form-group">
-          <label>Avans Plătit $</label>
-          <input type="number" id="f-avans" min="0" step="0.01" placeholder="0" oninput="calcRest()">
+          <label style="display:flex;align-items:center;gap:8px">
+            Avans Plătit $
+            <button type="button" class="btn-add-payment" onclick="addPaymentRow()" title="Adaugă încă o plată">+</button>
+          </label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" id="f-avans" min="0" step="0.01" placeholder="0" oninput="calcRest()" style="flex:1">
+            <input type="date" id="f-data-avans" style="flex:1">
+          </div>
         </div>
         <div class="form-group">
           <label>Rest de Plată $ <span style="font-weight:400;color:#94a3b8">(automat)</span></label>
           <div class="calc-display" id="f-rest-display">—</div>
         </div>
+        <!-- Plăți suplimentare inline -->
+        <div id="extra-payments-wrap" style="grid-column:span 3;display:flex;flex-direction:column;gap:8px"></div>
         <!-- ROW 4 -->
-        <div class="form-group">
-          <label>Data Plată Avans</label>
-          <input type="date" id="f-data-avans">
-        </div>
         <div class="form-group">
           <label>Data de Încărcare</label>
           <input type="date" id="f-data-inc">
@@ -606,7 +644,6 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
           <label>Data Plată Diferență</label>
           <input type="date" id="f-data-dif">
         </div>
-        <!-- ROW 5 -->
         <div class="form-group">
           <label>Status Comandă</label>
           <select id="f-status">
@@ -622,7 +659,7 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
         </div>
         <!-- Separator vizual -->
         <div style="grid-column:span 3;border-top:1px dashed var(--border);margin:4px 0"></div>
-        <!-- ROW 6: costuri suplimentare -->
+        <!-- ROW costuri suplimentare -->
         <div class="form-group">
           <label>Rată de Schimb RON/USD</label>
           <input type="number" id="f-curs" min="0" step="0.0001" placeholder="ex. 4.65" oninput="calcRest()">
@@ -632,10 +669,14 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
           <input type="number" id="f-taxvam" min="0" max="100" step="0.01" placeholder="ex. 3" oninput="calcRest()">
         </div>
         <div class="form-group">
-          <label>TVA și Transport $</label>
-          <input type="number" id="f-tvatransp" min="0" step="0.01" placeholder="0" oninput="calcRest()">
+          <label>TVA $</label>
+          <input type="number" id="f-tva" min="0" step="0.01" placeholder="0" oninput="calcRest()">
         </div>
-        <!-- ROW 7: Echivalent RON -->
+        <div class="form-group" style="grid-column:span 3">
+          <label>Transport $</label>
+          <input type="number" id="f-transport" min="0" step="0.01" placeholder="0" oninput="calcRest()">
+        </div>
+        <!-- Echivalent RON -->
         <div class="form-group" style="grid-column:span 3">
           <label>Echivalent RON (mii lei) <span style="font-weight:400;color:#94a3b8">= Rest $ × Rată ÷ 1000</span></label>
           <div class="calc-display" id="f-ron-calc" style="font-size:18px">—</div>
@@ -1104,24 +1145,66 @@ function renderOrders() {
 }
 
 /* ── Modal Comandă Nouă ── */
+let extraPayCount = 0;
+
 function openModal() {
-  ['f-produs','f-cont','f-furnizor','f-factura','f-valoare','f-avans','f-data-avans','f-data-inc','f-data-dif','f-curs','f-taxvam','f-tvatransp']
+  ['f-produs','f-cont','f-furnizor','f-factura','f-valoare','f-avans','f-data-avans','f-data-inc','f-data-dif','f-curs','f-taxvam','f-tva','f-transport']
     .forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('f-status').value = 'Comandat';
   document.getElementById('f-rest-display').textContent = '—';
   document.getElementById('f-ron-calc').textContent = '—';
+  document.getElementById('extra-payments-wrap').innerHTML = '';
+  extraPayCount = 0;
   document.getElementById('modalOverlay').style.display = 'flex';
 }
 function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
 
+function addPaymentRow() {
+  extraPayCount++;
+  const idx = extraPayCount;
+  const wrap = document.getElementById('extra-payments-wrap');
+  const div = document.createElement('div');
+  div.className = 'extra-pay-row';
+  div.id = 'eprow-' + idx;
+  div.innerHTML = `
+    <div class="form-group">
+      <label>Plată ${idx + 1} $</label>
+      <input type="number" id="ep-suma-${idx}" min="0" step="0.01" placeholder="0" oninput="calcRest()">
+    </div>
+    <div class="form-group">
+      <label>Data Plății ${idx + 1}</label>
+      <input type="date" id="ep-data-${idx}">
+    </div>
+    <button type="button" class="btn-remove-pay" onclick="removePayRow(${idx})">✕</button>`;
+  wrap.appendChild(div);
+}
+
+function removePayRow(idx) {
+  const el = document.getElementById('eprow-' + idx);
+  if (el) el.remove();
+  calcRest();
+}
+
+function getExtraPayments() {
+  const result = [];
+  for (let i = 1; i <= extraPayCount; i++) {
+    const sumaEl = document.getElementById('ep-suma-' + i);
+    const dataEl = document.getElementById('ep-data-' + i);
+    if (sumaEl) {
+      result.push({ suma: sumaEl.value, data: dataEl ? dataEl.value : '', nota: 'Tranșă ' + i });
+    }
+  }
+  return result;
+}
+
 function calcRest() {
-  const val   = parseFloat(document.getElementById('f-valoare').value)   || 0;
-  const av    = parseFloat(document.getElementById('f-avans').value)     || 0;
-  const curs  = parseFloat(document.getElementById('f-curs').value)      || 4.5;
-  const rest  = val - av;
+  const val   = parseFloat(document.getElementById('f-valoare').value) || 0;
+  const av    = parseFloat(document.getElementById('f-avans').value)   || 0;
+  const curs  = parseFloat(document.getElementById('f-curs').value)    || 4.5;
+  const extraPaid = getExtraPayments().reduce((s, p) => s + (parseFloat(p.suma) || 0), 0);
+  const rest  = val - av - extraPaid;
   document.getElementById('f-rest-display').textContent = rest.toLocaleString('ro-RO', {maximumFractionDigits:2}) + ' $';
-  const ron = (rest * curs / 1000);
-  document.getElementById('f-ron-calc').textContent = rest > 0 ? ron.toFixed(2) + ' mii lei' : '—';
+  document.getElementById('f-ron-calc').textContent = rest > 0 ? (rest * curs / 1000).toFixed(2) + ' mii lei' : (rest === 0 ? '0 — Lichidat' : '—');
 }
 
 function saveOrder() {
@@ -1140,8 +1223,9 @@ function saveOrder() {
     dataDif:    document.getElementById('f-data-dif').value,
     curs:       document.getElementById('f-curs').value,
     taxVamala:  document.getElementById('f-taxvam').value,
-    tvaTransp:  document.getElementById('f-tvatransp').value,
-    transe:     [],
+    tva:        document.getElementById('f-tva').value,
+    transport:  document.getElementById('f-transport').value,
+    transe:     getExtraPayments(),
   });
   persistOrders();
   renderOrders();
