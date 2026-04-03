@@ -659,22 +659,33 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
         </div>
         <!-- Separator vizual -->
         <div style="grid-column:span 3;border-top:1px dashed var(--border);margin:4px 0"></div>
-        <!-- ROW costuri suplimentare -->
+        <!-- Rată + Transport -->
         <div class="form-group">
           <label>Rată de Schimb RON/USD</label>
           <input type="number" id="f-curs" min="0" step="0.0001" placeholder="ex. 4.65" oninput="calcRest()">
         </div>
         <div class="form-group">
-          <label>% Taxă Vamală</label>
-          <input type="number" id="f-taxvam" min="0" max="100" step="0.01" placeholder="ex. 3" oninput="calcRest()">
-        </div>
-        <div class="form-group">
-          <label>TVA $</label>
-          <input type="number" id="f-tva" min="0" step="0.01" placeholder="0" oninput="calcRest()">
-        </div>
-        <div class="form-group" style="grid-column:span 3">
           <label>Transport $</label>
           <input type="number" id="f-transport" min="0" step="0.01" placeholder="0" oninput="calcRest()">
+        </div>
+        <div></div>
+        <!-- Taxă Vamală -->
+        <div class="form-group">
+          <label>% Taxă Vamală <span style="font-weight:400;color:#94a3b8">(Val. fact + Transport) × %</span></label>
+          <input type="number" id="f-taxvam" min="0" max="100" step="0.01" placeholder="ex. 10" oninput="calcRest()">
+        </div>
+        <div class="form-group" style="grid-column:span 2">
+          <label>Valoare Taxă Vamală $ <span style="font-weight:400;color:#94a3b8">(calculat)</span></label>
+          <div class="calc-display" id="f-taxvam-calc">—</div>
+        </div>
+        <!-- TVA -->
+        <div class="form-group">
+          <label>% TVA <span style="font-weight:400;color:#94a3b8">(Val. fact + Transport + Tax. vam) × %</span></label>
+          <input type="number" id="f-tvapct" min="0" max="100" step="0.01" value="21" oninput="calcRest()">
+        </div>
+        <div class="form-group" style="grid-column:span 2">
+          <label>Valoare TVA $ <span style="font-weight:400;color:#94a3b8">(calculat)</span></label>
+          <div class="calc-display" id="f-tva-calc">—</div>
         </div>
         <!-- Echivalent RON -->
         <div class="form-group" style="grid-column:span 3">
@@ -1148,10 +1159,13 @@ function renderOrders() {
 let extraPayCount = 0;
 
 function openModal() {
-  ['f-produs','f-cont','f-furnizor','f-factura','f-valoare','f-avans','f-data-avans','f-data-inc','f-data-dif','f-curs','f-taxvam','f-tva','f-transport']
+  ['f-produs','f-cont','f-furnizor','f-factura','f-valoare','f-avans','f-data-avans','f-data-inc','f-data-dif','f-curs','f-taxvam','f-transport']
     .forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('f-tvapct').value = '21';
   document.getElementById('f-status').value = 'Comandat';
   document.getElementById('f-rest-display').textContent = '—';
+  document.getElementById('f-taxvam-calc').textContent  = '—';
+  document.getElementById('f-tva-calc').textContent     = '—';
   document.getElementById('f-ron-calc').textContent = '—';
   document.getElementById('extra-payments-wrap').innerHTML = '';
   extraPayCount = 0;
@@ -1198,13 +1212,27 @@ function getExtraPayments() {
 }
 
 function calcRest() {
-  const val   = parseFloat(document.getElementById('f-valoare').value) || 0;
-  const av    = parseFloat(document.getElementById('f-avans').value)   || 0;
-  const curs  = parseFloat(document.getElementById('f-curs').value)    || 4.5;
+  const val       = parseFloat(document.getElementById('f-valoare').value)  || 0;
+  const av        = parseFloat(document.getElementById('f-avans').value)    || 0;
+  const curs      = parseFloat(document.getElementById('f-curs').value)     || 4.5;
+  const transport = parseFloat(document.getElementById('f-transport').value)|| 0;
+  const taxPct    = parseFloat(document.getElementById('f-taxvam').value)   || 0;
+  const tvaPct    = parseFloat(document.getElementById('f-tvapct').value)   || 21;
   const extraPaid = getExtraPayments().reduce((s, p) => s + (parseFloat(p.suma) || 0), 0);
-  const rest  = val - av - extraPaid;
-  document.getElementById('f-rest-display').textContent = rest.toLocaleString('ro-RO', {maximumFractionDigits:2}) + ' $';
-  document.getElementById('f-ron-calc').textContent = rest > 0 ? (rest * curs / 1000).toFixed(2) + ' mii lei' : (rest === 0 ? '0 — Lichidat' : '—');
+
+  const bazaTax   = val + transport;
+  const taxVal    = bazaTax * taxPct / 100;
+  const bazaTva   = bazaTax + taxVal;
+  const tvaVal    = bazaTva * tvaPct / 100;
+
+  const rest = val - av - extraPaid;
+
+  const fmt = v => v.toLocaleString('ro-RO', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' $';
+
+  document.getElementById('f-rest-display').textContent = fmt(rest);
+  document.getElementById('f-taxvam-calc').textContent  = taxPct ? fmt(taxVal) : '—';
+  document.getElementById('f-tva-calc').textContent     = fmt(tvaVal);
+  document.getElementById('f-ron-calc').textContent     = rest > 0 ? (rest * curs / 1000).toFixed(2) + ' mii lei' : (rest === 0 ? '0 — Lichidat' : '—');
 }
 
 function saveOrder() {
@@ -1222,8 +1250,8 @@ function saveOrder() {
     status:     document.getElementById('f-status').value,
     dataDif:    document.getElementById('f-data-dif').value,
     curs:       document.getElementById('f-curs').value,
-    taxVamala:  document.getElementById('f-taxvam').value,
-    tva:        document.getElementById('f-tva').value,
+    taxVamalaPct: document.getElementById('f-taxvam').value,
+    tvaPct:     document.getElementById('f-tvapct').value,
     transport:  document.getElementById('f-transport').value,
     transe:     getExtraPayments(),
   });
