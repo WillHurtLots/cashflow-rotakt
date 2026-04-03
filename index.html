@@ -301,6 +301,153 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 }
 .cf-table tbody tr.row-flux:hover td,
 .cf-table tbody tr.row-sold:hover td { filter: brightness(1.1); }
+
+/* ── PAGE NAVIGATION TABS ── */
+.page-nav {
+  display: flex; gap: 0;
+  background: #fff;
+  border-bottom: 2px solid var(--border);
+  padding: 0 16px;
+  position: sticky; top: 52px; z-index: 90;
+}
+.pnav-btn {
+  padding: 12px 22px; border: none;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  background: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--text3);
+  transition: .15s; letter-spacing: .01em;
+}
+.pnav-btn:hover { color: var(--brand); }
+.pnav-btn.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+/* ── ORDERS SECTION ── */
+.orders-wrap { padding: 16px; }
+.orders-topbar {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 14px;
+}
+.orders-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.orders-summary {
+  display: flex; gap: 24px; margin-bottom: 16px;
+  padding: 12px 16px; background: var(--white);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px;
+}
+.os-item { display: flex; flex-direction: column; gap: 2px; }
+.os-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); }
+.os-val { font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: -.02em; }
+.btn-add-order {
+  background: var(--brand); color: #fff; border: none;
+  padding: 8px 18px; border-radius: 7px;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: .15s;
+}
+.btn-add-order:hover { background: var(--brand-dark); }
+.ord-table-wrap {
+  background: var(--white); border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow: auto; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.ord-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 12.5px; min-width: 1400px;
+}
+.ord-table th {
+  padding: 10px 12px; background: var(--header-bg);
+  color: rgba(255,255,255,.85); font-size: 11px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  white-space: nowrap; text-align: left;
+  border-right: 1px solid rgba(255,255,255,.1);
+}
+.ord-table th.th-num { text-align: right; }
+.ord-table th:last-child { border-right: none; text-align: center; }
+.ord-table td {
+  padding: 9px 12px; border-bottom: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light);
+  white-space: nowrap; color: var(--text2); vertical-align: middle;
+}
+.ord-table td:last-child { border-right: none; }
+.ord-table tbody tr:hover td { background: #f8faff; }
+.td-num { text-align: right; font-variant-numeric: tabular-nums; }
+.td-ron { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--brand-dark); }
+.td-act { text-align: center; }
+.td-prod { font-weight: 600; color: var(--text); }
+
+/* Status badges */
+.status-badge {
+  display: inline-block; padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 700;
+  letter-spacing: .02em; white-space: nowrap;
+}
+.st-Comandat      { background: #f1f5f9; color: #475569; }
+.st-AvansP        { background: #dbeafe; color: #1e40af; }
+.st-InTranzit     { background: #fef3c7; color: #92400e; }
+.st-SositPort     { background: #ede9fe; color: #5b21b6; }
+.st-Vamuire       { background: #fff3cd; color: #d97706; }
+.st-Livrat        { background: #ccfbf1; color: #065f46; }
+.st-Lichidat      { background: #dcfce7; color: #14532d; }
+.st-Anulat        { background: #fee2e2; color: #991b1b; }
+
+.btn-del-row {
+  background: none; border: 1px solid #fca5a5; color: var(--red);
+  padding: 3px 8px; border-radius: 5px; font-size: 11px;
+  cursor: pointer; transition: .15s;
+}
+.btn-del-row:hover { background: var(--red); color: #fff; }
+.ord-empty {
+  text-align: center; padding: 60px 20px;
+  color: var(--text3); font-size: 13px;
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  z-index: 200; display: flex; align-items: center; justify-content: center;
+}
+.modal-box {
+  background: #fff; border-radius: 12px;
+  width: 700px; max-width: 95vw; max-height: 90vh;
+  overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px; border-bottom: 1px solid var(--border);
+}
+.modal-head h3 { font-size: 15px; font-weight: 700; color: var(--text); }
+.modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text3); line-height: 1; }
+.modal-body { padding: 20px 24px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.span2 { grid-column: span 2; }
+.form-group label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text3);
+}
+.form-group input, .form-group select {
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 13px; color: var(--text); background: #fff; transition: .15s;
+}
+.form-group input:focus, .form-group select:focus {
+  outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+}
+.calc-display {
+  padding: 8px 10px; border: 1px dashed var(--total-border);
+  border-radius: 6px; background: var(--total-bg);
+  font-size: 14px; font-weight: 800; color: var(--brand-dark); min-height: 36px;
+}
+.modal-foot {
+  display: flex; gap: 10px; justify-content: flex-end;
+  padding: 16px 24px; border-top: 1px solid var(--border);
+}
+.btn-cancel {
+  padding: 8px 20px; border: 1px solid var(--border); border-radius: 7px;
+  background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text2);
+}
+.btn-save {
+  padding: 8px 24px; border: none; border-radius: 7px;
+  background: var(--brand); color: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: .15s;
+}
+.btn-save:hover { background: var(--brand-dark); }
 </style>
 </head>
 <body>
@@ -319,6 +466,15 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
     </div>
   </div>
 </div>
+
+<!-- PAGE NAV -->
+<div class="page-nav">
+  <button class="pnav-btn active" onclick="switchTab('cashflow',this)">Cashflow</button>
+  <button class="pnav-btn" onclick="switchTab('comenzi',this)">Status Comenzi</button>
+</div>
+
+<!-- CASHFLOW SECTION -->
+<div id="sec-cashflow">
 
 <!-- ALERT -->
 <div class="alert-bar" id="alertBar">
@@ -339,6 +495,123 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
       <col class="c-total">
     </colgroup>
   </table>
+</div>
+</div><!-- /sec-cashflow -->
+
+<!-- COMENZI SECTION -->
+<div id="sec-comenzi" style="display:none">
+  <div class="orders-wrap">
+    <div class="orders-topbar">
+      <div class="orders-title">Status Comenzi Aprovizionare</div>
+      <button class="btn-add-order" onclick="openModal()">+ Adaugă Comandă</button>
+    </div>
+    <div class="orders-summary" id="ordSummary" style="display:none">
+      <div class="os-item"><span class="os-lbl">Total Comenzi</span><span class="os-val" id="os-total">0</span></div>
+      <div class="os-item"><span class="os-lbl">Rest de Plată $</span><span class="os-val" id="os-rest">0</span></div>
+      <div class="os-item"><span class="os-lbl">Echivalent RON (mii)</span><span class="os-val" id="os-ron">0</span></div>
+      <div class="os-item"><span class="os-lbl">În Tranzit</span><span class="os-val" id="os-tranzit">0</span></div>
+      <div class="os-item"><span class="os-lbl">Lichidate</span><span class="os-val" id="os-lich">0</span></div>
+    </div>
+    <div class="ord-table-wrap">
+      <table class="ord-table">
+        <thead>
+          <tr>
+            <th>Produs</th>
+            <th class="th-num">Nr. Containere</th>
+            <th>Furnizor</th>
+            <th>Nr. Factură</th>
+            <th class="th-num">Val. Factură $</th>
+            <th class="th-num">Avans Plătit $</th>
+            <th>Data Avans</th>
+            <th>Data Încărcare</th>
+            <th class="th-num">Rest Plată $</th>
+            <th>Status</th>
+            <th>Data Plată Diferență</th>
+            <th class="th-num">Echivalent RON (mii)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="ordBody">
+          <tr><td colspan="13" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMANDĂ NOUĂ -->
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Comandă Nouă de Aprovizionare</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group span2">
+          <label>Produs</label>
+          <input type="text" id="f-produs" placeholder="ex. MF360, Tractor 4WD...">
+        </div>
+        <div class="form-group">
+          <label>Nr. Containere</label>
+          <input type="number" id="f-cont" min="1" placeholder="1">
+        </div>
+        <div class="form-group">
+          <label>Denumire Furnizor</label>
+          <input type="text" id="f-furnizor" placeholder="ex. Yto Group...">
+        </div>
+        <div class="form-group">
+          <label>Număr Factură</label>
+          <input type="text" id="f-factura" placeholder="ex. INV-2026-001">
+        </div>
+        <div class="form-group">
+          <label>Valoare Factură $</label>
+          <input type="number" id="f-valoare" min="0" step="0.01" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Avans Plătit $</label>
+          <input type="number" id="f-avans" min="0" step="0.01" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Data Plată Avans</label>
+          <input type="date" id="f-data-avans">
+        </div>
+        <div class="form-group">
+          <label>Data de Încărcare</label>
+          <input type="date" id="f-data-inc">
+        </div>
+        <div class="form-group">
+          <label>Rest de Plată $</label>
+          <input type="number" id="f-rest" min="0" step="0.01" placeholder="0" oninput="calcRon()">
+        </div>
+        <div class="form-group">
+          <label>Status Comandă</label>
+          <select id="f-status">
+            <option value="Comandat">Comandat</option>
+            <option value="Avans Plătit">Avans Plătit</option>
+            <option value="În Tranzit">În Tranzit</option>
+            <option value="Sosit Port">Sosit Port</option>
+            <option value="Vămuire">Vămuire</option>
+            <option value="Livrat">Livrat</option>
+            <option value="Lichidat">Lichidat</option>
+            <option value="Anulat">Anulat</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Data Plată Diferență</label>
+          <input type="date" id="f-data-dif">
+        </div>
+        <div class="form-group">
+          <label>Echivalent RON (mii lei) = Rest $ × 4.5 ÷ 1000</label>
+          <div class="calc-display" id="f-ron-calc">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal()">Anulează</button>
+      <button class="btn-save" onclick="saveOrder()">Salvează Comanda</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -675,6 +948,141 @@ function setYear(yr, btn) {
 
 /* INIT */
 render(2026);
+
+/* ═══════════════════════════════════════
+   STATUS COMENZI — orders management
+═══════════════════════════════════════ */
+const STATUS_CSS = {
+  'Comandat':     'st-Comandat',
+  'Avans Plătit': 'st-AvansP',
+  'În Tranzit':   'st-InTranzit',
+  'Sosit Port':   'st-SositPort',
+  'Vămuire':      'st-Vamuire',
+  'Livrat':       'st-Livrat',
+  'Lichidat':     'st-Lichidat',
+  'Anulat':       'st-Anulat',
+};
+
+let orders = JSON.parse(localStorage.getItem('rotakt_orders') || '[]');
+
+function persistOrders() { localStorage.setItem('rotakt_orders', JSON.stringify(orders)); }
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const parts = d.split('-');
+  return parts[2] + '.' + parts[1] + '.' + parts[0];
+}
+function fmtUsd(v) {
+  const n = parseFloat(v);
+  if (isNaN(n)) return '—';
+  return n.toLocaleString('ro-RO', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + ' $';
+}
+function ronCalc(rest) {
+  const n = parseFloat(rest);
+  if (isNaN(n) || n === 0) return '—';
+  return (n * 4.5 / 1000).toFixed(2) + ' mii';
+}
+
+function renderOrders() {
+  const tbody = document.getElementById('ordBody');
+  const summary = document.getElementById('ordSummary');
+  if (!orders.length) {
+    tbody.innerHTML = '<tr><td colspan="13" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>';
+    summary.style.display = 'none';
+    return;
+  }
+  summary.style.display = 'flex';
+  const totalRest = orders.reduce((s,o) => s + (parseFloat(o.rest)||0), 0);
+  const totalRon  = (totalRest * 4.5 / 1000).toFixed(2);
+  const inTranzit = orders.filter(o => o.status === 'În Tranzit').length;
+  const lichidate = orders.filter(o => o.status === 'Lichidat').length;
+  document.getElementById('os-total').textContent  = orders.length;
+  document.getElementById('os-rest').textContent   = totalRest.toLocaleString('ro-RO') + ' $';
+  document.getElementById('os-ron').textContent    = totalRon + ' mii';
+  document.getElementById('os-tranzit').textContent = inTranzit;
+  document.getElementById('os-lich').textContent   = lichidate;
+
+  tbody.innerHTML = orders.map((o, i) => {
+    const css = STATUS_CSS[o.status] || 'st-Comandat';
+    return `<tr>
+      <td class="td-prod">${o.produs || '—'}</td>
+      <td class="td-num">${o.containere || '—'}</td>
+      <td>${o.furnizor || '—'}</td>
+      <td>${o.factura || '—'}</td>
+      <td class="td-num">${fmtUsd(o.valoare)}</td>
+      <td class="td-num">${fmtUsd(o.avans)}</td>
+      <td>${fmtDate(o.dataAvans)}</td>
+      <td>${fmtDate(o.dataInc)}</td>
+      <td class="td-num">${fmtUsd(o.rest)}</td>
+      <td><span class="status-badge ${css}">${o.status}</span></td>
+      <td>${fmtDate(o.dataDif)}</td>
+      <td class="td-ron">${ronCalc(o.rest)}</td>
+      <td class="td-act"><button class="btn-del-row" onclick="deleteOrder(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function openModal() {
+  ['f-produs','f-cont','f-furnizor','f-factura','f-valoare','f-avans','f-data-avans','f-data-inc','f-rest','f-data-dif']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('f-status').value = 'Comandat';
+  document.getElementById('f-ron-calc').textContent = '—';
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+
+function calcRon() {
+  const rest = parseFloat(document.getElementById('f-rest').value) || 0;
+  document.getElementById('f-ron-calc').textContent = rest ? (rest * 4.5 / 1000).toFixed(2) + ' mii lei' : '—';
+}
+
+function saveOrder() {
+  const produs = document.getElementById('f-produs').value.trim();
+  if (!produs) { alert('Introdu numele produsului.'); return; }
+  orders.push({
+    produs,
+    containere: document.getElementById('f-cont').value,
+    furnizor:   document.getElementById('f-furnizor').value.trim(),
+    factura:    document.getElementById('f-factura').value.trim(),
+    valoare:    document.getElementById('f-valoare').value,
+    avans:      document.getElementById('f-avans').value,
+    dataAvans:  document.getElementById('f-data-avans').value,
+    dataInc:    document.getElementById('f-data-inc').value,
+    rest:       document.getElementById('f-rest').value,
+    status:     document.getElementById('f-status').value,
+    dataDif:    document.getElementById('f-data-dif').value,
+  });
+  persistOrders();
+  renderOrders();
+  closeModal();
+}
+
+function deleteOrder(i) {
+  if (!confirm('Ștergi comanda?')) return;
+  orders.splice(i, 1);
+  persistOrders();
+  renderOrders();
+}
+
+/* Tab switching */
+function switchTab(tab, btn) {
+  document.querySelectorAll('.pnav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const cf = document.getElementById('sec-cashflow');
+  const co = document.getElementById('sec-comenzi');
+  const yrGroup = document.querySelector('.yr-group');
+  if (tab === 'cashflow') {
+    cf.style.display = '';
+    co.style.display = 'none';
+    yrGroup.style.display = '';
+  } else {
+    cf.style.display = 'none';
+    co.style.display = '';
+    yrGroup.style.display = 'none';
+    renderOrders();
+  }
+}
 </script>
 </body>
 </html>
