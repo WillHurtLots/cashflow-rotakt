@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROTAKT — Cashflow</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f4f6f9;
+  --white: #ffffff;
+  --border: #d1d9e0;
+  --border-light: #e8edf2;
+  --text: #1a1f2e;
+  --text2: #4a5568;
+  --text3: #8896a7;
+  --brand: #1a56db;
+  --brand-dark: #1e3a8a;
+  --green: #0e7c3a;
+  --green-bg: #f0faf4;
+  --red: #c0392b;
+  --red-bg: #fff5f5;
+  --red-light: #ffe0de;
+  --orange: #c05621;
+  --blue-row: #eef4ff;
+  --gray-row: #f8fafc;
+  --header-bg: #1e2d4a;
+  --cat-bg: #e8f0fe;
+  --subcat-color: #2d3748;
+  --total-bg: #dbeafe;
+  --total-border: #93c5fd;
+  --flux-neg: #c0392b;
+  --flux-pos: #0e7c3a;
+  --sold-neg: #c0392b;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Calibri', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.top-bar {
+  background: var(--header-bg);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.top-bar-left { display: flex; align-items: center; gap: 20px; }
+.logo { font-size: 17px; font-weight: 800; color: #fff; letter-spacing: -.02em; }
+.logo span { color: #60a5fa; }
+.page-title { font-size: 13px; font-weight: 500; color: rgba(255,255,255,.55); border-left: 1px solid rgba(255,255,255,.15); padding-left: 20px; }
+.top-bar-right { display: flex; align-items: center; gap: 8px; }
+
+/* Year pills */
+.yr-group { display: flex; background: rgba(255,255,255,.08); border-radius: 8px; padding: 3px; gap: 2px; }
+.yr-btn {
+  padding: 5px 16px; border-radius: 6px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 700; background: none;
+  color: rgba(255,255,255,.45); transition: .15s; letter-spacing: .02em;
+}
+.yr-btn:hover { color: rgba(255,255,255,.8); background: rgba(255,255,255,.08); }
+.yr-btn.active { background: var(--brand); color: #fff; box-shadow: 0 1px 4px rgba(26,86,219,.5); }
+
+/* ── KPI STRIP ── */
+.kpi-strip {
+  display: flex; gap: 1px; background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.kpi-item {
+  flex: 1; background: var(--white);
+  padding: 14px 20px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.kpi-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); }
+.kpi-val { font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+.kpi-sub { font-size: 11px; color: var(--text3); }
+.kpi-delta { display: inline-flex; align-items: center; gap: 2px; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 20px; }
+.delta-up   { background: var(--green-bg); color: var(--green); }
+.delta-dn   { background: var(--red-bg); color: var(--red); }
+.delta-warn { background: #fff8ec; color: #b45309; }
+
+/* ── ALERT ── */
+.alert-bar {
+  background: #fff3cd; border-bottom: 2px solid #f59e0b;
+  padding: 10px 24px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; color: #78350f;
+}
+.alert-bar strong { font-weight: 700; }
+.alert-close { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 18px; color: #92400e; line-height: 1; }
+
+/* ── TABLE CONTAINER ── */
+.table-container {
+  overflow: auto;
+  margin: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  background: var(--white);
+}
+
+/* ── CASHFLOW TABLE ── */
+.cf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  min-width: 1000px;
+}
+
+/* Column widths */
+.cf-table col.c-label { width: 320px; }
+.cf-table col.c-month { width: 72px; }
+.cf-table col.c-total { width: 80px; }
+
+/* Sticky first column */
+.cf-table th:first-child,
+.cf-table td:first-child {
+  position: sticky; left: 0; z-index: 2;
+}
+
+/* HEADER ROW */
+.cf-table thead th {
+  padding: 10px 10px;
+  text-align: center;
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  background: var(--header-bg); color: rgba(255,255,255,.9);
+  border-right: 1px solid rgba(255,255,255,.1);
+  white-space: nowrap;
+}
+.cf-table thead th:first-child {
+  text-align: left; background: var(--header-bg);
+  font-size: 11px; color: rgba(255,255,255,.6);
+  padding-left: 14px;
+}
+.cf-table thead th.col-total {
+  background: #162238; color: rgba(255,255,255,.8);
+  border-left: 2px solid rgba(255,255,255,.15);
+}
+
+/* ALL ROWS BASE */
+.cf-table td {
+  padding: 5px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--text2);
+}
+.cf-table td:first-child {
+  text-align: left;
+  padding-left: 14px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--white);
+  border-right: 2px solid var(--border);
+}
+
+/* ── ROW TYPES ── */
+
+/* Section header (Incasari, Plati) */
+tr.row-section td {
+  background: var(--header-bg) !important;
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: .02em;
+  border-bottom: none;
+  padding-top: 7px; padding-bottom: 7px;
+}
+tr.row-section td:first-child {
+  background: var(--header-bg) !important;
+  color: #fff !important;
+}
+tr.row-section td.val-pos { color: #86efac !important; }
+tr.row-section td.val-neg { color: #fca5a5 !important; }
+
+/* Category (bold, light blue bg) */
+tr.row-cat td {
+  background: var(--cat-bg);
+  font-weight: 700;
+  color: var(--brand-dark);
+  border-bottom: 1px solid #bfdbfe;
+}
+tr.row-cat td:first-child {
+  background: var(--cat-bg);
+  color: var(--brand-dark);
+}
+
+/* Sub-item */
+tr.row-sub td:first-child {
+  padding-left: 28px;
+  font-weight: 400;
+  color: var(--text2);
+  font-size: 12px;
+}
+tr.row-sub td { background: var(--white); }
+tr.row-sub:nth-child(even) td { background: #fafbfd; }
+
+/* Sub-sub item (indented more) */
+tr.row-sub2 td:first-child {
+  padding-left: 44px;
+  font-weight: 400;
+  color: var(--text3);
+  font-size: 11.5px;
+  font-style: italic;
+}
+tr.row-sub2 td { background: var(--white); font-size: 11.5px; }
+
+/* Total row */
+tr.row-total td {
+  background: var(--total-bg) !important;
+  font-weight: 800;
+  color: var(--brand-dark) !important;
+  border-top: 2px solid var(--total-border);
+  border-bottom: 2px solid var(--total-border);
+  font-size: 13px;
+}
+tr.row-total td:first-child {
+  background: var(--total-bg) !important;
+  color: var(--brand-dark) !important;
+}
+
+/* Flux net row */
+tr.row-flux td {
+  background: #1e2d4a !important;
+  color: #fff !important;
+  font-weight: 800;
+  font-size: 13px;
+  border-top: 2px solid #0f172a;
+  border-bottom: 1px solid #0f172a;
+}
+tr.row-flux td:first-child {
+  background: #1e2d4a !important;
+  color: #fff !important;
+}
+tr.row-flux td.val-pos { color: #86efac !important; }
+tr.row-flux td.val-neg { color: #fca5a5 !important; }
+
+/* Sold final row */
+tr.row-sold td {
+  background: #0f172a !important;
+  color: #fff !important;
+  font-weight: 800;
+  font-size: 13.5px;
+  border-top: 2px solid #334155;
+}
+tr.row-sold td:first-child {
+  background: #0f172a !important;
+  color: #fff !important;
+}
+tr.row-sold td.val-pos { color: #4ade80 !important; }
+tr.row-sold td.val-neg { color: #f87171 !important; }
+
+/* Sold initial row */
+tr.row-sold-init td {
+  background: #f1f5f9;
+  font-weight: 600;
+  color: var(--brand-dark);
+  border-bottom: 2px solid var(--border);
+}
+tr.row-sold-init td:first-child {
+  background: #f1f5f9;
+}
+
+/* Empty separator row */
+tr.row-empty td { height: 6px; background: var(--bg); border: none; padding: 0; }
+tr.row-empty td:first-child { background: var(--bg); }
+
+/* Col total */
+td.col-total {
+  border-left: 2px solid var(--total-border);
+  font-weight: 700;
+  background: #f0f7ff !important;
+  color: var(--brand-dark) !important;
+}
+tr.row-section td.col-total { background: #0d1b30 !important; color: rgba(255,255,255,.8) !important; }
+tr.row-flux td.col-total    { background: #0f172a !important; color: #c7d2fe !important; }
+tr.row-sold td.col-total    { background: #020617 !important; }
+tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand-dark) !important; }
+
+/* Value color classes */
+.val-neg { color: var(--red) !important; font-weight: 700; }
+.val-pos { color: var(--green) !important; }
+.val-zero { color: var(--text3) !important; }
+.val-empty { color: #ccc !important; }
+
+/* Hover */
+.cf-table tbody tr:not(.row-empty):not(.row-flux):not(.row-sold):not(.row-sold-init):hover td {
+  filter: brightness(.96);
+}
+.cf-table tbody tr.row-flux:hover td,
+.cf-table tbody tr.row-sold:hover td { filter: brightness(1.1); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-bar-left">
+    <div class="logo">RO<span>TAKT</span></div>
+    <div class="page-title">Cashflow — Situația fluxurilor de numerar</div>
+  </div>
+  <div class="top-bar-right">
+    <div class="yr-group">
+      <button class="yr-btn" onclick="setYear(2024,this)">2024</button>
+      <button class="yr-btn active" onclick="setYear(2025,this)">2025</button>
+      <button class="yr-btn" onclick="setYear(2026,this)">2026 ···</button>
+    </div>
+  </div>
+</div>
+
+<!-- ALERT -->
+<div class="alert-bar" id="alertBar">
+  <span>⚠️</span>
+  <span>Previziunile pentru <strong>Sem. II 2026</strong> (Iul–Dec) nu conțin încasări. Soldul devine negativ din <strong>Sep 2026 (−217 mii)</strong> și atinge <strong>−4.600 mii în Dec 2026</strong>.</span>
+  <button class="alert-close" onclick="this.closest('.alert-bar').style.display='none'">×</button>
+</div>
+
+<!-- KPI STRIP -->
+<div class="kpi-strip" id="kpiStrip"></div>
+
+<!-- TABLE -->
+<div class="table-container">
+  <table class="cf-table" id="cfTable">
+    <colgroup>
+      <col class="c-label">
+      <col class="c-month" span="12">
+      <col class="c-total">
+    </colgroup>
+  </table>
+</div>
+
+<script>
+'use strict';
+
+const MONTHS = ['IAN','FEB','MAR','APR','MAI','IUN','IUL','AUG','SEP','OCT','NOV','DEC'];
+const sum = a => a.reduce((s,v) => s + (v||0), 0);
+const n = (v, allowZero) => {
+  if (v === null || v === undefined || v === '') return null;
+  if (!allowZero && v === 0) return null;
+  return v;
+};
+
+/* ════════════ DATA ════════════ */
+const DATA = {
+  2026: {
+    sold_initial: [1377,934,1110,2152,1658,2316,4125,2346,1099,-217,-1172,-3636],
+    /* INCASARI */
+    inc_vanzari:  [2601,2405,6691,4900,6800,6600,null,null,null,null,null,null],
+    inc_alte:     [null,400,null,null,null,null,null,null,null,null,null,null],
+    inc_vanzare_active: [null,null,null,null,null,null,null,null,null,null,null,null],
+    inc_imprumuturi:    [null,null,null,null,null,null,null,null,null,null,null,null],
+    inc_actionari:      [null,null,null,null,null,null,null,null,null,null,null,null],
+    inc_total:    [2601,2805,6691,4900,6800,6600,0,0,0,0,0,0],
+    /* PLATI OPERATIONALE */
+    stocuri_ext:  [1192,704,2100,2643,3721,2252,115,45,23,0,0,0],
+    stocuri_int:  [871,865,1800,800,900,1416,null,null,null,null,null,null],
+    taxe_vamale:  [9,21,165,55,83,12,44,0,0,0,0,0],
+    tva_vama:     [55,173,638,306,466,136,102,0,0,0,0,0],
+    personal:     [380,380,400,500,400,400,400,400,400,400,400,400],
+    investitii:   [null,null,null,null,null,null,null,null,null,null,null,null],
+    combustibili: [15,20,22,21,21,18,20,20,20,20,20,20],
+    alte_total:   [241,308,338,409,410,392,365,358,358,358,358,358],
+    c6024: [0,1,2,5,10,6,4,5,5,5,5,5],
+    c6028: [3,7,11,5,18,28,16,13,13,13,13,13],
+    c603:  [1,2,0,4,13,9,0,4,4,4,4,4],
+    c604:  [3,3,4,6,5,12,9,6,6,6,6,6],
+    c605:  [48,39,13,48,18,11,26,29,29,29,29,29],
+    c608:  [4,2,6,11,16,18,16,16,16,16,16,16],
+    c611:  [32,47,42,31,16,21,27,31,31,31,31,31],
+    c613:  [14,20,0,2,19,2,3,10,10,10,10,10],
+    c6231: [8,10,19,11,9,5,6,10,10,10,10,10],
+    c6232: [3,27,20,18,30,15,31,21,21,21,21,21],
+    c624:  [52,72,135,154,135,130,111,110,110,110,110,110],
+    c625:  [15,4,6,12,2,14,12,9,9,9,9,9],
+    c626:  [4,4,4,5,5,4,4,4,4,4,4,4],
+    c628:  [54,70,76,97,114,117,100,90,90,90,90,90],
+    chirii:[96,105,100,103,109,114,116,110,110,110,110,110],
+    capital_chelt:[0,0,0,0,0,0,0,0,0,0,0,0],
+    retrageri:[64,58,64,62,64,62,64,64,64,64,64,64],
+    leasing:[0,0,0,0,0,0,0,0,0,0,0,0],
+    /* RAMBURSARE */
+    ramb_total:[441,381,446,987,463,462,1002,692,783,445,1954,454],
+    rate_credit:[187,187,187,187,187,187,187,187,187,187,187,187],
+    dobanzi:[229,170,225,228,241,241,236,232,291,232,232,232],
+    ramb_nou:[null,null,null,400,null,null,null,null,null,null,null,null],
+    impozit_profit:[null,null,null,140,null,null,100,null,null,null,null,null],
+    servicii_bancare:[25,24,34,32,35,34,37,35,15,26,35,35],
+    tva_plata:[null,null,null,null,null,null,442,238,290,null,1500,null],
+    /* TOTALE */
+    plati_total:[3044,2629,5649,5394,6142,4791,1779,1247,1316,955,2464,964],
+    flux_net:[-443,176,1042,-494,658,1809,-1779,-1247,-1316,-955,-2464,-964],
+    sold_final:[934,1110,2152,1658,2316,4125,2346,1099,-217,-1172,-3636,-4600],
+  },
+  2025: {
+    sold_initial:[3908,3320,674,728,812,1560,3980,4331,3141,1791,1817,1540],
+    inc_vanzari: [3577,2854,5967,6371,7330,7261,6677,4543,4658,4638,5656,3025],
+    inc_alte:    [null,400,null,null,null,null,null,null,null,null,null,null],
+    inc_vanzare_active:[null,null,null,null,null,null,null,null,null,null,null,null],
+    inc_imprumuturi:[null,null,null,null,null,null,null,null,null,null,null,null],
+    inc_actionari:[null,null,null,null,null,null,null,null,null,null,null,null],
+    inc_total:[3577,3254,5967,6371,7330,7261,6677,4543,4658,4638,5656,3025],
+    stocuri_ext:[1003,2151,3011,3532,3721,2252,2699,1727,2344,1410,1212,1126],
+    stocuri_int:[1266,1596,908,1079,1655,1416,1615,2517,1387,1397,1249,670],
+    taxe_vamale:[45,90,180,120,95,55,38,20,15,10,10,10],
+    tva_vama:   [120,280,620,340,420,180,95,40,30,25,25,25],
+    personal:   [476,447,497,532,499,533,517,510,504,514,480,420],
+    investitii: [null,null,null,null,null,null,null,null,null,null,null,null],
+    combustibili:[18,22,25,24,23,20,22,22,22,21,21,21],
+    alte_total: [241,308,338,409,410,392,365,358,358,358,358,358],
+    c6024:[0,1,2,5,10,6,4,5,5,5,5,5],
+    c6028:[3,7,11,5,18,28,16,13,13,13,13,13],
+    c603: [1,2,0,4,13,9,0,4,4,4,4,4],
+    c604: [3,3,4,6,5,12,9,6,6,6,6,6],
+    c605: [48,39,13,48,18,11,26,29,29,29,29,29],
+    c608: [4,2,6,11,16,18,16,16,16,16,16,16],
+    c611: [32,47,42,31,16,21,27,31,31,31,31,31],
+    c613: [14,20,0,2,19,2,3,10,10,10,10,10],
+    c6231:[8,10,19,11,9,5,6,10,10,10,10,10],
+    c6232:[3,27,20,18,30,15,31,21,21,21,21,21],
+    c624: [52,72,135,154,135,130,111,110,110,110,110,110],
+    c625: [15,4,6,12,2,14,12,9,9,9,9,9],
+    c626: [4,4,4,5,5,4,4,4,4,4,4,4],
+    c628: [54,70,76,97,114,117,100,90,90,90,90,90],
+    chirii:[86,94,90,93,98,102,104,99,99,99,99,99],
+    capital_chelt:[0,0,0,0,0,0,0,0,0,0,0,0],
+    retrageri:[58,52,58,56,58,56,58,58,58,58,58,58],
+    leasing:[0,0,0,0,0,0,0,0,0,0,0,0],
+    ramb_total:[358,353,363,504,380,379,919,609,795,458,1967,415],
+    rate_credit:[160,160,160,160,160,160,160,160,160,160,160,160],
+    dobanzi:[180,170,180,175,185,185,180,175,210,175,175,175],
+    ramb_nou:[null,null,null,null,null,null,400,null,null,null,null,null],
+    impozit_profit:[null,null,null,120,null,null,null,null,null,null,null,null],
+    servicii_bancare:[18,23,23,49,35,34,35,34,15,23,32,30],
+    tva_plata:[null,null,null,null,null,null,144,240,210,100,1600,50],
+    plati_total:[4165,5900,5913,6287,6582,4841,6326,5733,6007,4612,5933,3188],
+    flux_net:[-588,-2646,54,84,748,2420,351,-1190,-1349,26,-277,-163],
+    sold_final:[3320,674,728,812,1560,3980,4331,3141,1791,1817,1540,1377],
+  },
+  2024: {
+    sold_initial:[6817,5965,5499,3870,4300,4225,3651,2845,2602,2694,4975,4600],
+    inc_vanzari: [2528,1670,4211,4108,4933,4311,3930,6310,3330,6768,2602,2786],
+    inc_alte:    [null,null,null,null,null,null,null,null,null,null,null,null],
+    inc_vanzare_active:[null,null,null,null,null,null,null,null,null,null,null,null],
+    inc_imprumuturi:[null,null,null,null,null,null,null,null,null,null,null,null],
+    inc_actionari:[null,null,null,null,null,null,null,null,null,null,null,null],
+    inc_total:[2528,1670,4211,4108,4933,4311,3930,6310,3330,6768,2602,2786],
+    stocuri_ext:[880,580,1800,1900,2800,1950,1800,3200,1400,2800,900,1050],
+    stocuri_int:[700,640,1500,800,900,1200,1300,1600,900,700,750,700],
+    taxe_vamale:[30,50,120,90,80,40,30,18,14,8,8,8],
+    tva_vama:   [80,160,420,240,310,140,80,38,30,20,20,20],
+    personal:   [360,360,380,470,380,380,380,380,380,380,360,340],
+    investitii: [null,null,null,null,null,null,null,null,null,null,null,null],
+    combustibili:[14,18,20,19,19,16,18,18,18,18,18,18],
+    alte_total: [220,280,310,375,380,360,335,328,328,328,328,328],
+    c6024:[0,1,2,4,9,5,3,4,4,4,4,4],
+    c6028:[3,6,9,4,15,25,14,11,11,11,11,11],
+    c603: [1,2,0,3,11,8,0,3,3,3,3,3],
+    c604: [2,2,3,5,4,10,7,5,5,5,5,5],
+    c605: [42,34,11,42,15,9,22,25,25,25,25,25],
+    c608: [3,2,5,9,13,15,13,13,13,13,13,13],
+    c611: [28,41,37,27,14,18,23,27,27,27,27,27],
+    c613: [12,17,0,2,16,2,2,8,8,8,8,8],
+    c6231:[6,8,16,9,7,4,5,8,8,8,8,8],
+    c6232:[2,22,17,15,25,12,25,17,17,17,17,17],
+    c624: [45,62,118,134,118,113,96,95,95,95,95,95],
+    c625: [12,3,5,10,2,11,10,7,7,7,7,7],
+    c626: [3,3,3,4,4,3,3,3,3,3,3,3],
+    c628: [48,62,67,86,100,103,88,78,78,78,78,78],
+    chirii:[78,84,81,83,87,91,92,88,88,88,88,88],
+    capital_chelt:[0,0,0,0,0,0,0,0,0,0,0,0],
+    retrageri:[52,46,52,50,52,50,52,52,52,52,52,52],
+    leasing:[0,0,0,0,0,0,0,0,0,0,0,0],
+    ramb_total:[280,280,680,280,280,280,680,480,620,280,1580,380],
+    rate_credit:[150,150,150,150,150,150,150,150,150,150,150,150],
+    dobanzi:[110,110,110,110,110,110,110,110,110,110,110,110],
+    ramb_nou:[null,null,400,null,null,null,400,null,null,null,null,null],
+    impozit_profit:[null,null,null,null,null,null,null,null,null,null,null,null],
+    servicii_bancare:[20,20,20,20,20,20,20,20,20,20,20,20],
+    tva_plata:[null,null,null,null,null,null,null,200,340,null,1300,null],
+    plati_total:[3380,2136,5840,3678,5008,4885,4736,6553,3238,4487,2977,3478],
+    flux_net:[-852,-466,-1629,430,-75,-574,-806,-243,92,2281,-375,-692],
+    sold_final:[5965,5499,3870,4300,4225,3651,2845,2602,2694,4975,4600,3908],
+  },
+};
+
+/* ════════════ RENDER ════════════ */
+const fmtV = v => {
+  if (v === null || v === undefined) return '';
+  if (v === 0) return '0';
+  return Math.abs(v).toLocaleString('ro-RO');
+};
+const fmtTotal = v => {
+  if (v === null || v === undefined || v === 0) return '—';
+  return (v < 0 ? '−' : '') + Math.abs(Math.round(v)).toLocaleString('ro-RO');
+};
+
+function valClass(v, forceSign) {
+  if (v === null || v === undefined || v === '') return 'val-empty';
+  if (v === 0) return 'val-zero';
+  if (forceSign) return v < 0 ? 'val-neg' : 'val-pos';
+  return v < 0 ? 'val-neg' : '';
+}
+
+function row(type, label, data, opts = {}) {
+  const { signed = false, indent = 0, totalField = true, hideZero = false, rowStyle = '' } = opts;
+  const trClass = type ? `row-${type}` : '';
+  const labelPad = indent ? `style="padding-left:${14 + indent}px"` : '';
+
+  let cells = '';
+  let rowTotal = 0;
+  let hasData = false;
+
+  for (let i = 0; i < 12; i++) {
+    const v = data ? data[i] : null;
+    const display = fmtV(v === 0 && hideZero ? null : v);
+    const cls = signed ? valClass(v, true) : (v < 0 ? 'val-neg' : '');
+    const negMark = v !== null && v !== undefined && v < 0 ? '−' : '';
+    cells += `<td class="${cls}">${v !== null && v !== undefined ? (negMark + fmtV(Math.abs(v))) : ''}</td>`;
+    if (v !== null && v !== undefined) { rowTotal += v; hasData = true; }
+  }
+
+  const totVal = totalField && hasData ? rowTotal : null;
+  const totCls = ['col-total', signed ? valClass(totVal, true) : (totVal < 0 ? 'val-neg' : '')].join(' ');
+  cells += `<td class="${totCls}">${totVal !== null ? fmtTotal(totVal) : ''}</td>`;
+
+  return `<tr class="${trClass}" ${rowStyle}><td ${labelPad}>${label}</td>${cells}</tr>`;
+}
+
+function emptyRow() {
+  return `<tr class="row-empty">${'<td></td>'.repeat(14)}</tr>`;
+}
+
+function render(yr) {
+  const d = DATA[yr];
+  const isPrev = yr === 2026;
+  document.getElementById('alertBar').style.display = isPrev ? 'flex' : 'none';
+
+  // KPI
+  const ti = sum(d.inc_total), tp = sum(d.plati_total), fl = sum(d.flux_net), sf = d.sold_final[11];
+  const prev = DATA[yr-1];
+  const dI = prev ? Math.round((ti - sum(prev.inc_total)) / Math.abs(sum(prev.inc_total)) * 100) : null;
+  const avgBurn = (() => { const neg = d.flux_net.filter(v=>v<0); return neg.length ? Math.round(Math.abs(sum(neg)/neg.length)) : 0; })();
+  const runway = sf > 0 ? (sf / (tp/12)).toFixed(1) : '< 0';
+  const runwayC = sf <= 0 ? 'var(--red)' : parseFloat(runway) < 3 ? 'var(--orange)' : 'var(--green)';
+
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="kpi-item">
+      <div class="kpi-lbl">Sold Final ${yr}</div>
+      <div class="kpi-val" style="color:${sf>=0?'#1a56db':'var(--red)'}">${fmtTotal(sf)} <span style="font-size:13px;font-weight:500;color:var(--text3)">mii lei</span></div>
+      <div class="kpi-sub">Dec ${yr}</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-lbl">Cash Runway</div>
+      <div class="kpi-val" style="color:${runwayC}">${runway} <span style="font-size:13px;font-weight:500;color:var(--text3)">${sf>0?'luni':''}</span></div>
+      <div class="kpi-sub">La rata actuală de burn</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-lbl">Total Încasări</div>
+      <div class="kpi-val" style="color:var(--green)">${fmtTotal(ti)} <span style="font-size:13px;font-weight:500;color:var(--text3)">mii</span></div>
+      ${dI !== null ? `<div class="kpi-delta ${dI>=0?'delta-up':'delta-dn'}">${dI>=0?'▲':'▼'} ${Math.abs(dI)}% vs ${yr-1}</div>` : '<div class="kpi-sub">—</div>'}
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-lbl">Total Plăți</div>
+      <div class="kpi-val" style="color:var(--red)">${fmtTotal(tp)} <span style="font-size:13px;font-weight:500;color:var(--text3)">mii</span></div>
+      <div class="kpi-sub">Burn mediu: ${avgBurn.toLocaleString('ro-RO')} mii/lună</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-lbl">Flux Net Cumulat</div>
+      <div class="kpi-val" style="color:${fl>=0?'var(--green)':'var(--red)'}">${fmtTotal(fl)} <span style="font-size:13px;font-weight:500;color:var(--text3)">mii</span></div>
+      <div class="kpi-sub">${isPrev?'Previzionat':'Realizat'} ${yr}</div>
+    </div>
+  `;
+
+  // TABLE
+  const ths = MONTHS.map(m => `<th>${m}</th>`).join('');
+  let html = `
+    <thead>
+      <tr>
+        <th></th>
+        ${ths}
+        <th class="col-total">TOTAL</th>
+      </tr>
+    </thead>
+    <tbody>
+  `;
+
+  html += row('sold-init', 'Sold inițial de numerar *', d.sold_initial, {totalField: false});
+  html += emptyRow();
+
+  // INCASARI section
+  html += row('section', 'ÎNCASĂRI', d.inc_total, {signed:false});
+  html += row('sub',  'Încasări din vânzări',                              d.inc_vanzari);
+  html += row('sub',  'Alte încasări din activitatea firmei',              d.inc_alte);
+  html += row('sub',  'Vânzări active și încasări extraordinare',          d.inc_vanzare_active);
+  html += row('sub',  'Împrumuturi contractate',                           d.inc_imprumuturi);
+  html += row('sub',  'Contribuția acționarilor în numerar',               d.inc_actionari);
+  html += emptyRow();
+  html += row('total', 'TOTAL ÎNCASĂRI',                                   d.inc_total);
+  html += emptyRow();
+
+  // PLATI section
+  html += row('section', 'PLĂȚI', d.plati_total, {signed:false});
+  html += row('sub',  'Achiziții de stocuri (Extern)',                     d.stocuri_ext);
+  html += row('sub',  'Achiziții de stocuri (Intern)',                     d.stocuri_int);
+  html += row('sub2', '446.08 — Taxe vamale',                             d.taxe_vamale);
+  html += row('sub2', '446.11 — TVA în vamă',                             d.tva_vama);
+  html += row('sub',  'Cheltuieli cu personalul (641, 642, 6458)',         d.personal);
+  html += row('sub',  'Cheltuieli administrative (investiții)',            d.investitii);
+  html += row('sub',  'Combustibili (6022)',                               d.combustibili);
+  html += emptyRow();
+
+  html += row('cat',  'Alte cheltuieli',                                   d.alte_total);
+  html += row('sub2', '6024 — Cheltuieli piese de schimb',                d.c6024, {hideZero:false});
+  html += row('sub2', '6028 — Cheltuieli alte materiale consumabile',     d.c6028);
+  html += row('sub2', '603 — Materiale de natura obiectelor de inventar', d.c603);
+  html += row('sub2', '604 — Materiale nestocate',                        d.c604);
+  html += row('sub2', '605 — Energie și apă',                             d.c605);
+  html += row('sub2', '608 — Ambalaje',                                   d.c608);
+  html += row('sub2', '611 — Întreținere și reparații',                   d.c611);
+  html += row('sub2', '613 — Prime de asigurare',                         d.c613);
+  html += row('sub2', '623.1 — Protocol, reclamă și publicitate',         d.c6231);
+  html += row('sub2', '623.2 — Reclamă și publicitate',                   d.c6232);
+  html += row('sub2', '624 — Transport bunuri și personal',               d.c624);
+  html += row('sub2', '625 — Deplasări, detașări, transferuri',           d.c625);
+  html += row('sub2', '626 — Poștale și telecomunicații',                 d.c626);
+  html += row('sub2', '628 — Alte servicii executate de terți',           d.c628);
+  html += emptyRow();
+
+  html += row('sub', '612 — Redevențe, locații de gestiune și chirii',    d.chirii);
+  html += row('sub', 'Cheltuieli de capital',                              d.capital_chelt, {hideZero:true});
+  html += row('sub', 'Retrageri de numerar de către acționari (4558)',     d.retrageri);
+  html += row('sub', 'Alte cheltuieli financiare și excepționale (Leasing)', d.leasing, {hideZero:true});
+  html += emptyRow();
+
+  html += row('cat',  'Rambursarea datoriilor',                            d.ramb_total);
+  html += row('sub2', 'Rambursări de capital existente (Rate credit)',     d.rate_credit);
+  html += row('sub2', 'Plata dobânzilor pentru creditele existente',       d.dobanzi);
+  html += row('sub2', 'Rambursări capital — noua solicitare de credit',    d.ramb_nou);
+  html += row('sub2', '4411 — Impozit profit',                             d.impozit_profit);
+  html += row('sub2', '627 — Cheltuieli servicii bancare și asimilate',    d.servicii_bancare);
+  html += row('sub2', '4423 — TVA de plată',                              d.tva_plata);
+  html += emptyRow();
+
+  html += row('total', 'TOTAL PLĂȚI',                                      d.plati_total);
+  html += emptyRow();
+
+  // FLUX + SOLD
+  html += row('flux', 'FLUXUL NET DE NUMERAR (+/−)',                      d.flux_net, {signed:true});
+  html += row('sold', 'SOLD FINAL DE NUMERAR',                            d.sold_final, {signed:true});
+
+  html += '</tbody>';
+  document.getElementById('cfTable').innerHTML = html;
+}
+
+/* ════════════ NAV ════════════ */
+let activeY = 2025;
+function setYear(yr, btn) {
+  activeY = yr;
+  document.querySelectorAll('.yr-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  render(yr);
+}
+
+/* INIT */
+render(2025);
+</script>
+</body>
+</html>
