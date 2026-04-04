@@ -1126,6 +1126,33 @@ const STATUS_CSS = {
 let orders = JSON.parse(localStorage.getItem('rotakt_orders') || '[]');
 let activePayIdx = null;
 
+/* ── SEED comenzi reale (rulează o singură dată) ── */
+if (!localStorage.getItem('rotakt_seed_v2')) {
+  const SEED = [
+    { produs:'ROBOT PISCINA', containere:'1 LCL', furnizor:'LEOPARD GROUP', factura:'',
+      valoare:'20850', avans:'6255', dataAvans:'2026-04-02', dataInc:'', status:'Avans Plătit',
+      dataDif:'2026-04-14', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'2500', transe:[] },
+    { produs:'ACUMULATORI SI STATII INCARCARE', containere:'LCL', furnizor:'ZOMAX', factura:'ZMRT2501M',
+      valoare:'18940', avans:'5682', dataAvans:'2026-02-03', dataInc:'', status:'Avans Plătit',
+      dataDif:'2026-04-15', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'2500', transe:[] },
+    { produs:'LIBERIA 2= LIBERTA', containere:'1', furnizor:'TIME TOP', factura:'TTMR251205',
+      valoare:'34571', avans:'6914', dataAvans:'2025-12-23', dataInc:'', status:'Avans Plătit',
+      dataDif:'2026-04-01', curs:'4.5', taxVamalaPct:'10', tvaPct:'21', transport:'5000', transe:[] },
+    { produs:'RABOTA plus ***', containere:'2', furnizor:'TIME TOP', factura:'',
+      valoare:'41000', avans:'12300', dataAvans:'2026-03-17', dataInc:'', status:'Avans Plătit',
+      dataDif:'2026-06-24', curs:'4.5', taxVamalaPct:'10', tvaPct:'21', transport:'10000', transe:[] },
+    { produs:'GAGARIN cu volan ***', containere:'1', furnizor:'TIME TOP', factura:'',
+      valoare:'16542', avans:'4963', dataAvans:'2026-03-10', dataInc:'2026-03-24', status:'Avans Plătit',
+      dataDif:'2026-05-12', curs:'4.5', taxVamalaPct:'10', tvaPct:'21', transport:'5000', transe:[] },
+    { produs:'Scuter LJI25T-16A', containere:'1', furnizor:'Longjia Tomas', factura:'',
+      valoare:'33500', avans:'10050', dataAvans:'2026-03-17', dataInc:'', status:'Avans Plătit',
+      dataDif:'2026-05-31', curs:'4.5', taxVamalaPct:'10', tvaPct:'21', transport:'5000', transe:[] },
+  ];
+  orders = orders.concat(SEED);
+  localStorage.setItem('rotakt_orders', JSON.stringify(orders));
+  localStorage.setItem('rotakt_seed_v2', '1');
+}
+
 function persistOrders() { localStorage.setItem('rotakt_orders', JSON.stringify(orders)); }
 
 function fmtDate(d) {
