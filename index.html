@@ -736,7 +736,7 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
             <th>Furnizor</th>
             <th>Nr. Factură</th>
             <th class="th-num">Val. $</th>
-            <th class="th-num">Avans $</th>
+            <th class="th-num">Total Plătit $</th>
             <th>Data Avans</th>
             <th>Data Înc.</th>
             <th class="th-num">Rest $</th>
@@ -1425,7 +1425,7 @@ function renderOrders() {
       <td style="font-size:12px">${o.furnizor || '—'}</td>
       <td style="font-size:11.5px;color:var(--text3)">${o.factura || '—'}</td>
       <td class="td-num">${fmtUsd(o.valoare)}</td>
-      <td class="td-num">${fmtUsd(o.avans)}</td>
+      <td class="td-num">${fmtUsd((parseFloat(o.avans)||0) + (o.transe||[]).reduce((s,t)=>s+(parseFloat(t.suma)||0),0))}</td>
       <td style="font-size:11.5px">${fmtDate(o.dataAvans)}</td>
       <td style="font-size:11.5px">${fmtDate(o.dataInc)}</td>
       <td class="td-num" style="color:${restColor};font-weight:700">${fmtUsd(rest)}</td>
