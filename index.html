@@ -426,6 +426,36 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 }
 .btn-remove-pay:hover { background: var(--red); color: #fff; }
 
+/* ── Multi-row order styles ── */
+.ord-row-main td { background: #fff; border-bottom: none !important; }
+.ord-row-main td:first-child { font-weight: 700; color: var(--text); font-size: 13px; }
+.ord-row-sub td {
+  background: #fafbfd; border-bottom: none !important;
+  font-size: 11.5px; color: var(--text2);
+  padding-top: 5px; padding-bottom: 5px;
+}
+.ord-row-sub .ord-sub-label {
+  padding-left: 22px; color: var(--text3); font-style: italic; font-weight: 500;
+}
+.ord-row-sub.sub-tax td    { background: #f8fff8; }
+.ord-row-sub.sub-tva td    { background: #f0f8ff; }
+.ord-row-sub.sub-transp td { background: #fffbf0; }
+.ord-row-total-line td {
+  background: #1e2d4a !important; color: #fff !important;
+  font-weight: 800; font-size: 12.5px;
+  border-top: 2px solid #0f172a !important;
+  border-bottom: 2px solid #0f172a !important;
+  padding-top: 8px; padding-bottom: 8px;
+}
+.ord-row-total-line td.tot-ron { color: #86efac !important; font-size: 14px; }
+.ord-row-total-line td.tot-usd { color: #fde68a !important; }
+.ord-row-spacer td {
+  height: 10px; background: var(--bg) !important;
+  border: none !important; padding: 0;
+}
+.ord-row-sub:hover td { filter: brightness(.97); }
+.ord-row-main:hover td { filter: brightness(.98); }
+
 .btn-edit-row {
   background: none; border: 1px solid #93c5fd; color: var(--brand-dark);
   padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 600;
@@ -569,33 +599,26 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
       <table class="ord-table">
         <thead>
           <tr>
-            <th>Produs</th>
-            <th class="th-num">Nr. Containere</th>
+            <th style="width:240px">Produs / Tip Cost</th>
+            <th class="th-num">Nr. Cont.</th>
             <th>Furnizor</th>
             <th>Nr. Factură</th>
             <th class="th-num">Val. Factură $</th>
             <th class="th-num">Avans Plătit $</th>
             <th>Data Avans</th>
             <th>Data Încărcare</th>
-            <th class="th-num">Transport $</th>
-            <th class="th-num">% Tax. Vam.</th>
-            <th class="th-num">Val. Tax. Vam. $</th>
-            <th class="th-num">% TVA</th>
-            <th class="th-num">Val. TVA $</th>
-            <th class="th-num">Rest Plată $</th>
+            <th class="th-num">%</th>
+            <th class="th-num">Valoare / Rest $</th>
+            <th>Data Scadentă</th>
+            <th class="th-num">Echiv. RON (mii)</th>
             <th>Status</th>
-            <th>Data Plată Diferență</th>
-            <th class="th-num">Echivalent RON (mii)</th>
-            <th style="background:#1a3a2a">Data Plată Tax. Vam.</th>
-            <th style="background:#1a3a2a">Data Plată TVA</th>
-            <th style="background:#1a2a3a">Data Plată Transport</th>
             <th>Plăți</th>
             <th></th>
             <th></th>
           </tr>
         </thead>
         <tbody id="ordBody">
-          <tr><td colspan="22" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>
+          <tr><td colspan="16" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>
         </tbody>
       </table>
     </div>
@@ -1146,7 +1169,7 @@ function renderOrders() {
   const tbody   = document.getElementById('ordBody');
   const summary = document.getElementById('ordSummary');
   if (!orders.length) {
-    tbody.innerHTML = '<tr><td colspan="22" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="16" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>';
     summary.style.display = 'none';
     return;
   }
@@ -1161,44 +1184,87 @@ function renderOrders() {
   document.getElementById('os-tranzit').textContent = inTranzit;
   document.getElementById('os-lich').textContent    = lichidate;
 
+  const E = (s) => s || '—';
+  const ron = (v, c) => { const r = ronCalcNum(v, c); return r > 0 ? r.toFixed(2) + ' mii' : '—'; };
+
   tbody.innerHTML = orders.map((o, i) => {
     const css       = STATUS_CSS[o.status] || 'st-Comandat';
     const rest      = restCurrent(o);
-    const ron       = ronCalcNum(rest, o.curs);
+    const curs      = parseFloat(o.curs) || 4.5;
     const nrTr      = (o.transe || []).length;
-    const val       = parseFloat(o.valoare)    || 0;
-    const transport = parseFloat(o.transport)  || 0;
-    const taxPct    = parseFloat(o.taxVamalaPct)|| 0;
-    const tvaPct    = parseFloat(o.tvaPct)     || 21;
+    const val       = parseFloat(o.valoare)      || 0;
+    const transport = parseFloat(o.transport)    || 0;
+    const taxPct    = parseFloat(o.taxVamalaPct) || 0;
+    const tvaPct    = parseFloat(o.tvaPct)       || 21;
     const taxVal    = (val + transport) * taxPct / 100;
     const tvaVal    = (val + transport + taxVal) * tvaPct / 100;
-    const btnPay = `<button class="btn-pay-row" onclick="openPayModal(${i})" title="Adaugă / Vezi plăți">+ Plată${nrTr ? ` <span class="pay-badge">${nrTr}</span>` : ''}</button>`;
+    const totalUsd  = rest + taxVal + tvaVal + transport;
+    const totalRon  = ronCalcNum(rest, curs) + ronCalcNum(taxVal, curs) + ronCalcNum(tvaVal, curs) + ronCalcNum(transport, curs);
+
+    const dataTax   = addDays(o.dataDif, 60);
+    const dataTva   = addDays(o.dataDif, 60);
+    const dataTransp= addDays(o.dataDif, 90);
+
+    const btnPay  = `<button class="btn-pay-row" onclick="openPayModal(${i})" title="Adaugă / Vezi plăți">+ Plată${nrTr ? ` <span class="pay-badge">${nrTr}</span>` : ''}</button>`;
     const btnEdit = `<button class="btn-edit-row" onclick="openEditModal(${i})">Editează</button>`;
-    return `<tr>
-      <td class="td-prod">${o.produs || '—'}</td>
-      <td class="td-num">${o.containere || '—'}</td>
-      <td>${o.furnizor || '—'}</td>
-      <td>${o.factura || '—'}</td>
+    const btnDel  = `<button class="btn-del-row" onclick="deleteOrder(${i})">✕</button>`;
+    const empty   = `<td></td>`;
+    const e6      = empty.repeat(6);
+
+    return `
+    <tr class="ord-row-main">
+      <td class="td-prod">${E(o.produs)}</td>
+      <td class="td-num">${E(o.containere)}</td>
+      <td>${E(o.furnizor)}</td>
+      <td>${E(o.factura)}</td>
       <td class="td-num">${fmtUsd(o.valoare)}</td>
       <td class="td-num">${fmtUsd(o.avans)}</td>
       <td>${fmtDate(o.dataAvans)}</td>
       <td>${fmtDate(o.dataInc)}</td>
-      <td class="td-num">${transport ? fmtUsd(transport) : '—'}</td>
-      <td class="td-num">${taxPct ? taxPct + '%' : '—'}</td>
-      <td class="td-num">${taxPct ? fmtUsd(taxVal) : '—'}</td>
-      <td class="td-num">${tvaPct}%</td>
-      <td class="td-num">${fmtUsd(tvaVal)}</td>
-      <td class="td-num" style="color:${rest < 0 ? 'var(--red)' : rest === 0 ? 'var(--green)' : 'var(--text2)'};font-weight:${rest === 0 ? 700 : 400}">${fmtUsd(rest)}</td>
-      <td><span class="status-badge ${css}">${o.status}</span></td>
+      <td></td>
+      <td class="td-num" style="color:${rest<=0?'var(--green)':'var(--text2)'};font-weight:${rest===0?700:400}">${fmtUsd(rest)}</td>
       <td>${fmtDate(o.dataDif)}</td>
-      <td class="td-ron">${rest !== 0 ? ron.toFixed(2) + ' mii' : '<span style="color:var(--green);font-weight:700">Lichidat</span>'}</td>
-      <td style="background:#f0fff4">${fmtDateHighlight(addDays(o.dataDif, 60))}</td>
-      <td style="background:#f0fff4">${fmtDateHighlight(addDays(o.dataDif, 60))}</td>
-      <td style="background:#eff6ff">${fmtDateHighlight(addDays(o.dataDif, 90))}</td>
+      <td class="td-ron">${ron(rest, curs)}</td>
+      <td><span class="status-badge ${css}">${o.status}</span></td>
       <td class="td-act">${btnPay}</td>
       <td class="td-act">${btnEdit}</td>
-      <td class="td-act"><button class="btn-del-row" onclick="deleteOrder(${i})">✕</button></td>
-    </tr>`;
+      <td class="td-act">${btnDel}</td>
+    </tr>
+    <tr class="ord-row-sub sub-tax">
+      <td class="ord-sub-label">↳ Taxă Vamală</td>
+      ${e6}<td></td><td></td>
+      <td class="td-num">${taxPct ? taxPct + '%' : '—'}</td>
+      <td class="td-num">${taxPct ? fmtUsd(taxVal) : '—'}</td>
+      <td>${fmtDateHighlight(dataTax)}</td>
+      <td class="td-ron">${taxPct ? ron(taxVal, curs) : '—'}</td>
+      <td></td><td></td><td></td><td></td>
+    </tr>
+    <tr class="ord-row-sub sub-tva">
+      <td class="ord-sub-label">↳ TVA</td>
+      ${e6}<td></td><td></td>
+      <td class="td-num">${tvaPct}%</td>
+      <td class="td-num">${fmtUsd(tvaVal)}</td>
+      <td>${fmtDateHighlight(dataTva)}</td>
+      <td class="td-ron">${ron(tvaVal, curs)}</td>
+      <td></td><td></td><td></td><td></td>
+    </tr>
+    <tr class="ord-row-sub sub-transp">
+      <td class="ord-sub-label">↳ Transport</td>
+      ${e6}<td></td><td></td>
+      <td></td>
+      <td class="td-num">${transport ? fmtUsd(transport) : '—'}</td>
+      <td>${fmtDateHighlight(dataTransp)}</td>
+      <td class="td-ron">${transport ? ron(transport, curs) : '—'}</td>
+      <td></td><td></td><td></td><td></td>
+    </tr>
+    <tr class="ord-row-total-line">
+      <td colspan="9" style="text-align:right;letter-spacing:.05em;font-size:11px">TOTAL COMANDĂ</td>
+      <td class="td-num tot-usd">${fmtUsd(totalUsd)}</td>
+      <td></td>
+      <td class="tot-ron">${totalRon.toFixed(2)} mii</td>
+      <td colspan="4"></td>
+    </tr>
+    <tr class="ord-row-spacer"><td colspan="16"></td></tr>`;
   }).join('');
 }
 
