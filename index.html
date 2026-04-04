@@ -1486,9 +1486,9 @@ function toggleDetail(i) {
   const row  = document.getElementById('orow-' + i);
   const det  = document.getElementById('odet-' + i);
   if (!det) return;
-  const open = det.style.display === 'none' || det.style.display === '';
-  det.style.display = open ? '' : 'none';
-  row.classList.toggle('expanded', open);
+  const isOpen = det.style.display !== 'none';
+  det.style.display = isOpen ? 'none' : '';
+  row.classList.toggle('expanded', !isOpen);
 }
 
 function deleteOrder(i) {
