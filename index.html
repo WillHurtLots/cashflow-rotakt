@@ -324,8 +324,8 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 /* ── PLATI LAYOUT ── */
 .plati-main-layout {
   display: grid;
-  grid-template-columns: 180px 1fr 180px;
-  gap: 12px; padding: 14px 16px;
+  grid-template-columns: 260px 1fr 260px;
+  gap: 16px; padding: 14px 16px;
   align-items: start;
 }
 .plati-chart-card {
@@ -690,7 +690,7 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
     <!-- LEFT CHART -->
     <div class="plati-chart-card">
       <div class="plati-chart-title">Plătit pe luni $</div>
-      <canvas id="chartPlatit"></canvas>
+      <canvas id="chartPlatit" style="max-height:420px"></canvas>
     </div>
 
     <!-- CALENDAR -->
@@ -717,7 +717,7 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
     <!-- RIGHT CHART -->
     <div class="plati-chart-card">
       <div class="plati-chart-title">De achitat pe luni $</div>
-      <canvas id="chartDeAchitat"></canvas>
+      <canvas id="chartDeAchitat" style="max-height:420px"></canvas>
     </div>
   </div><!-- /plati-main-layout -->
 </div>
@@ -1873,13 +1873,14 @@ function renderPayCharts() {
 
   const commonOpts = {
     responsive: true,
+    indexAxis: 'y',
     plugins: { legend: { display: false }, tooltip: {
       callbacks: { label: ctx => ' ' + ctx.raw.toLocaleString('ro-RO') + ' $' }
     }},
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-      y: { grid: { color: '#f1f5f9' }, ticks: {
-        font: { size: 11 },
+      y: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      x: { grid: { color: '#f1f5f9' }, ticks: {
+        font: { size: 10 },
         callback: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v
       }}
     }
