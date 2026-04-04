@@ -321,19 +321,23 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 .pnav-btn:hover { color: var(--brand); }
 .pnav-btn.active { color: var(--brand); border-bottom-color: var(--brand); }
 
-/* ── CHARTS ROW ── */
-.plati-charts-row {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 16px; padding: 16px 20px 0;
+/* ── PLATI LAYOUT ── */
+.plati-main-layout {
+  display: grid;
+  grid-template-columns: 180px 1fr 180px;
+  gap: 12px; padding: 14px 16px;
+  align-items: start;
 }
 .plati-chart-card {
   background: #fff; border: 1px solid var(--border); border-radius: 10px;
-  padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  padding: 12px 10px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  position: sticky; top: 100px;
 }
 .plati-chart-title {
-  font-size: 12px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .06em; color: var(--text3); margin-bottom: 12px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text3); margin-bottom: 8px; text-align: center;
 }
+.cal-wrap { padding: 0; }
 
 /* ── CALENDAR ── */
 .cal-wrap { padding: 16px 20px; max-width: 1200px; margin: 0 auto; }
@@ -682,19 +686,15 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 
 <!-- PLĂȚI CALENDAR SECTION -->
 <div id="sec-plati" style="display:none">
-  <!-- CHARTS ROW -->
-  <div class="plati-charts-row">
+  <div class="plati-main-layout">
+    <!-- LEFT CHART -->
     <div class="plati-chart-card">
-      <div class="plati-chart-title">Plătit (avans + tranșe) pe luni — $</div>
-      <canvas id="chartPlatit" height="200"></canvas>
+      <div class="plati-chart-title">Plătit pe luni $</div>
+      <canvas id="chartPlatit"></canvas>
     </div>
-    <div class="plati-chart-card">
-      <div class="plati-chart-title">De achitat pe luni — $</div>
-      <canvas id="chartDeAchitat" height="200"></canvas>
-    </div>
-  </div>
 
-  <div class="cal-wrap">
+    <!-- CALENDAR -->
+    <div class="cal-wrap">
     <div class="cal-header">
       <button class="cal-nav" onclick="calMove(-1)">&#8592;</button>
       <div class="cal-title" id="calTitle"></div>
@@ -712,7 +712,14 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
       <div class="cal-list-title" id="calListTitle"></div>
       <div id="calList"></div>
     </div>
-  </div>
+    </div><!-- /cal-wrap -->
+
+    <!-- RIGHT CHART -->
+    <div class="plati-chart-card">
+      <div class="plati-chart-title">De achitat pe luni $</div>
+      <canvas id="chartDeAchitat"></canvas>
+    </div>
+  </div><!-- /plati-main-layout -->
 </div>
 
 <!-- CASHFLOW SECTION -->
