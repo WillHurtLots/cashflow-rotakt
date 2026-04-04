@@ -1126,6 +1126,22 @@ const STATUS_CSS = {
 let orders = JSON.parse(localStorage.getItem('rotakt_orders') || '[]');
 let activePayIdx = null;
 
+/* ── PATCH v4: REMORCA avans 5460→2×2730 ── */
+if (!localStorage.getItem('rotakt_seed_v4')) {
+  orders = orders.map(o => {
+    if (o.produs === 'REMORCA AGRICOLA 4x4' && o.avans === '5460') {
+      o.avans = '2730';
+      o.dataAvans = '2025-12-16';
+      if (!o.transe) o.transe = [];
+      if (!o.transe.find(t => t.nota === 'Tranșă 2 avans'))
+        o.transe.unshift({suma:'2730', data:'2026-01-30', nota:'Tranșă 2 avans'});
+    }
+    return o;
+  });
+  localStorage.setItem('rotakt_orders', JSON.stringify(orders));
+  localStorage.setItem('rotakt_seed_v4', '1');
+}
+
 /* ── SEED comenzi reale (rulează o singură dată) ── */
 if (!localStorage.getItem('rotakt_seed_v3')) {
   const SEED3 = [
@@ -1145,8 +1161,9 @@ if (!localStorage.getItem('rotakt_seed_v3')) {
       valoare:'71860', avans:'16088', dataAvans:'2026-02-03', dataInc:'2026-03-20', status:'Avans Plătit',
       dataDif:'2026-05-05', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'5500', transe:[] },
     { produs:'REMORCA AGRICOLA 4x4', containere:'2', furnizor:'RIZHAO', factura:'YT2025-1212',
-      valoare:'54600', avans:'5460', dataAvans:'2025-12-16', dataInc:'2026-03-30', status:'Avans Plătit',
-      dataDif:'2026-05-08', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'10000', transe:[] },
+      valoare:'54600', avans:'2730', dataAvans:'2025-12-16', dataInc:'2026-03-30', status:'Avans Plătit',
+      dataDif:'2026-05-08', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'10000',
+      transe:[{suma:'2730', data:'2026-01-30', nota:'Tranșă 2 avans'}] },
   ];
   orders = orders.concat(SEED3);
   localStorage.setItem('rotakt_orders', JSON.stringify(orders));
