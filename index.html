@@ -1127,6 +1127,32 @@ let orders = JSON.parse(localStorage.getItem('rotakt_orders') || '[]');
 let activePayIdx = null;
 
 /* ── SEED comenzi reale (rulează o singură dată) ── */
+if (!localStorage.getItem('rotakt_seed_v3')) {
+  const SEED3 = [
+    { produs:'RO101RS AGILE +TRACTORAS MIMI 4X4+ ro70ss+motopompe', containere:'4', furnizor:'CHARLIE (3)', factura:'RTT250918',
+      valoare:'188294', avans:'27068', dataAvans:'', dataInc:'', status:'Avans Plătit',
+      dataDif:'2026-04-15', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'12500', transe:[] },
+    { produs:'MF360+GC360+TI360+PIESE', containere:'1', furnizor:'SIMADE', factura:'SIMADE25-162',
+      valoare:'111935', avans:'22400', dataAvans:'2026-02-03', dataInc:'', status:'Avans Plătit',
+      dataDif:'2026-04-15', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'8000', transe:[] },
+    { produs:'Pompe stropit', containere:'1', furnizor:'ZHEJIANG SHENGSHI YUANKIN TEC', factura:'SL25071Q',
+      valoare:'46598', avans:'9320', dataAvans:'2026-02-03', dataInc:'', status:'Avans Plătit',
+      dataDif:'2026-04-30', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'8000', transe:[] },
+    { produs:'ACCESORII SI CONSUMABILE PENTRU COASE SI MOTOFIERASTRAIE', containere:'', furnizor:'PMD', factura:'S497798',
+      valoare:'42765', avans:'0', dataAvans:'', dataInc:'', status:'Comandat',
+      dataDif:'2026-03-31', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'2000', transe:[] },
+    { produs:'TRACTOR AGRICOL 25CP', containere:'1', furnizor:'YANCHENG JIAYANG MACHINERY CO.,LTD.', factura:'',
+      valoare:'71860', avans:'16088', dataAvans:'2026-02-03', dataInc:'2026-03-20', status:'Avans Plătit',
+      dataDif:'2026-05-05', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'5500', transe:[] },
+    { produs:'REMORCA AGRICOLA 4x4', containere:'2', furnizor:'RIZHAO', factura:'YT2025-1212',
+      valoare:'54600', avans:'5460', dataAvans:'2025-12-16', dataInc:'2026-03-30', status:'Avans Plătit',
+      dataDif:'2026-05-08', curs:'4.5', taxVamalaPct:'3', tvaPct:'21', transport:'10000', transe:[] },
+  ];
+  orders = orders.concat(SEED3);
+  localStorage.setItem('rotakt_orders', JSON.stringify(orders));
+  localStorage.setItem('rotakt_seed_v3', '1');
+}
+
 if (!localStorage.getItem('rotakt_seed_v2')) {
   const SEED = [
     { produs:'ROBOT PISCINA', containere:'1 LCL', furnizor:'LEOPARD GROUP', factura:'',
