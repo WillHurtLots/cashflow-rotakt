@@ -586,13 +586,16 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
             <th>Status</th>
             <th>Data Plată Diferență</th>
             <th class="th-num">Echivalent RON (mii)</th>
+            <th style="background:#1a3a2a">Data Plată Tax. Vam.</th>
+            <th style="background:#1a3a2a">Data Plată TVA</th>
+            <th style="background:#1a2a3a">Data Plată Transport</th>
             <th>Plăți</th>
             <th></th>
             <th></th>
           </tr>
         </thead>
         <tbody id="ordBody">
-          <tr><td colspan="19" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>
+          <tr><td colspan="22" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>
         </tbody>
       </table>
     </div>
@@ -1107,6 +1110,23 @@ function fmtDate(d) {
   const parts = d.split('-');
   return parts[2] + '.' + parts[1] + '.' + parts[0];
 }
+function addDays(dateStr, days) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function fmtDateHighlight(dateStr) {
+  if (!dateStr) return '<span style="color:var(--text3)">—</span>';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  const diff = Math.ceil((d - today) / 86400000);
+  const label = fmtDate(dateStr);
+  if (diff < 0)  return `<span style="color:var(--red);font-weight:700" title="Depășit cu ${Math.abs(diff)} zile">${label} ⚠</span>`;
+  if (diff <= 7) return `<span style="color:#d97706;font-weight:700" title="În ${diff} zile">${label} !</span>`;
+  return `<span style="color:var(--text2)">${label}</span>`;
+}
 function fmtUsd(v) {
   const num = parseFloat(v);
   if (isNaN(num)) return '—';
@@ -1126,7 +1146,7 @@ function renderOrders() {
   const tbody   = document.getElementById('ordBody');
   const summary = document.getElementById('ordSummary');
   if (!orders.length) {
-    tbody.innerHTML = '<tr><td colspan="19" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="22" class="ord-empty">Nicio comandă înregistrată. Apasă „+ Adaugă Comandă" pentru a începe.</td></tr>';
     summary.style.display = 'none';
     return;
   }
@@ -1172,6 +1192,9 @@ function renderOrders() {
       <td><span class="status-badge ${css}">${o.status}</span></td>
       <td>${fmtDate(o.dataDif)}</td>
       <td class="td-ron">${rest !== 0 ? ron.toFixed(2) + ' mii' : '<span style="color:var(--green);font-weight:700">Lichidat</span>'}</td>
+      <td style="background:#f0fff4">${fmtDateHighlight(addDays(o.dataDif, 60))}</td>
+      <td style="background:#f0fff4">${fmtDateHighlight(addDays(o.dataDif, 60))}</td>
+      <td style="background:#eff6ff">${fmtDateHighlight(addDays(o.dataDif, 90))}</td>
       <td class="td-act">${btnPay}</td>
       <td class="td-act">${btnEdit}</td>
       <td class="td-act"><button class="btn-del-row" onclick="deleteOrder(${i})">✕</button></td>
