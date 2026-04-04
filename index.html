@@ -590,7 +590,7 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
     </div>
     <div class="orders-summary" id="ordSummary" style="display:none">
       <div class="os-item"><span class="os-lbl">Total Comenzi</span><span class="os-val" id="os-total">0</span></div>
-      <div class="os-item"><span class="os-lbl">Rest de Plată $</span><span class="os-val" id="os-rest">0</span></div>
+      <div class="os-item"><span class="os-lbl">Total Obligații $</span><span class="os-val" id="os-rest">0</span></div>
       <div class="os-item"><span class="os-lbl">Echivalent RON (mii)</span><span class="os-val" id="os-ron">0</span></div>
       <div class="os-item"><span class="os-lbl">În Tranzit</span><span class="os-val" id="os-tranzit">0</span></div>
       <div class="os-item"><span class="os-lbl">Lichidate</span><span class="os-val" id="os-lich">0</span></div>
@@ -1244,12 +1244,24 @@ function renderOrders() {
     return;
   }
   summary.style.display = 'flex';
-  const totalRest = orders.reduce((s, o) => s + restCurrent(o), 0);
-  const totalRon  = orders.reduce((s, o) => s + ronCalcNum(restCurrent(o), o.curs), 0);
+
+  /* total = rest comandă + taxă vamală + TVA + transport pentru fiecare comandă */
+  function orderTotalUsd(o) {
+    const val  = parseFloat(o.valoare)      || 0;
+    const tr   = parseFloat(o.transport)    || 0;
+    const taxP = parseFloat(o.taxVamalaPct) || 0;
+    const tvaP = parseFloat(o.tvaPct)       || 21;
+    const taxV = (val + tr) * taxP / 100;
+    const tvaV = (val + tr + taxV) * tvaP / 100;
+    return restCurrent(o) + taxV + tvaV + tr;
+  }
+
+  const totalUsd  = orders.reduce((s, o) => s + orderTotalUsd(o), 0);
+  const totalRon  = orders.reduce((s, o) => s + ronCalcNum(orderTotalUsd(o), o.curs), 0);
   const inTranzit = orders.filter(o => o.status === 'În Tranzit').length;
   const lichidate = orders.filter(o => o.status === 'Lichidat').length;
   document.getElementById('os-total').textContent   = orders.length;
-  document.getElementById('os-rest').textContent    = totalRest.toLocaleString('ro-RO', {maximumFractionDigits:0}) + ' $';
+  document.getElementById('os-rest').textContent    = totalUsd.toLocaleString('ro-RO', {maximumFractionDigits:0}) + ' $';
   document.getElementById('os-ron').textContent     = totalRon.toFixed(2) + ' mii';
   document.getElementById('os-tranzit').textContent = inTranzit;
   document.getElementById('os-lich').textContent    = lichidate;
