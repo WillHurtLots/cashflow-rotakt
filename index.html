@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ROTAKT — Cashflow</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -319,6 +320,20 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 }
 .pnav-btn:hover { color: var(--brand); }
 .pnav-btn.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+/* ── CHARTS ROW ── */
+.plati-charts-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; padding: 16px 20px 0;
+}
+.plati-chart-card {
+  background: #fff; border: 1px solid var(--border); border-radius: 10px;
+  padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.plati-chart-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text3); margin-bottom: 12px;
+}
 
 /* ── CALENDAR ── */
 .cal-wrap { padding: 16px 20px; max-width: 1200px; margin: 0 auto; }
@@ -667,6 +682,18 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 
 <!-- PLĂȚI CALENDAR SECTION -->
 <div id="sec-plati" style="display:none">
+  <!-- CHARTS ROW -->
+  <div class="plati-charts-row">
+    <div class="plati-chart-card">
+      <div class="plati-chart-title">Plătit (avans + tranșe) pe luni — $</div>
+      <canvas id="chartPlatit" height="200"></canvas>
+    </div>
+    <div class="plati-chart-card">
+      <div class="plati-chart-title">De achitat pe luni — $</div>
+      <canvas id="chartDeAchitat" height="200"></canvas>
+    </div>
+  </div>
+
   <div class="cal-wrap">
     <div class="cal-header">
       <button class="cal-nav" onclick="calMove(-1)">&#8592;</button>
@@ -1748,7 +1775,7 @@ function switchTab(tab, btn) {
   document.getElementById('sec-plati').style.display    = tab === 'plati'    ? '' : 'none';
   document.querySelector('.yr-group').style.display = tab === 'cashflow' ? '' : 'none';
   if (tab === 'comenzi') renderOrders();
-  if (tab === 'plati')   initCalendar();
+  if (tab === 'plati')   { initCalendar(); renderPayCharts(); }
 }
 
 /* ═══════════════════════════════════════
@@ -1790,6 +1817,86 @@ function collectPayments() {
     (o.transe || []).forEach(t => add(t.data, 'transa', o.produs, t.suma, o.curs));
   });
   return events;
+}
+
+/* ── CHARTS ── */
+let chartPlatitInst = null, chartDeAchitatInst = null;
+
+function renderPayCharts() {
+  const MO = ['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'];
+  // 12 luni: de la luna curentă - 3 → + 8
+  const today = new Date();
+  const labels = [], platitData = [], deAchitatData = [];
+
+  for (let m = -2; m <= 9; m++) {
+    const d = new Date(today.getFullYear(), today.getMonth() + m, 1);
+    const yr = d.getFullYear(), mo = d.getMonth();
+    labels.push(MO[mo] + ' ' + yr.toString().slice(2));
+
+    let platit = 0, deAchitat = 0;
+
+    orders.forEach(o => {
+      const curs = parseFloat(o.curs) || 4.5;
+      const val  = parseFloat(o.valoare)      || 0;
+      const tr   = parseFloat(o.transport)    || 0;
+      const taxP = parseFloat(o.taxVamalaPct) || 0;
+      const tvaP = parseFloat(o.tvaPct)       || 21;
+      const taxV = (val + tr) * taxP / 100;
+      const tvaV = (val + tr + taxV) * tvaP / 100;
+
+      const inMonth = (dateStr) => {
+        if (!dateStr) return false;
+        const dd = new Date(dateStr);
+        return dd.getFullYear() === yr && dd.getMonth() === mo;
+      };
+
+      // Plătit: avans (data avans) + tranșe
+      if (inMonth(o.dataAvans)) platit += parseFloat(o.avans) || 0;
+      (o.transe || []).forEach(t => { if (inMonth(t.data)) platit += parseFloat(t.suma) || 0; });
+
+      // De achitat: rest comandă + taxe la scadențele lor
+      if (inMonth(o.dataDif))           deAchitat += restCurrent(o);
+      if (inMonth(addDays(o.dataDif,60))) { deAchitat += taxV; deAchitat += tvaV; }
+      if (inMonth(addDays(o.dataDif,90))) deAchitat += tr;
+    });
+
+    platitData.push(Math.round(platit));
+    deAchitatData.push(Math.round(deAchitat));
+  }
+
+  const commonOpts = {
+    responsive: true,
+    plugins: { legend: { display: false }, tooltip: {
+      callbacks: { label: ctx => ' ' + ctx.raw.toLocaleString('ro-RO') + ' $' }
+    }},
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: { grid: { color: '#f1f5f9' }, ticks: {
+        font: { size: 11 },
+        callback: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v
+      }}
+    }
+  };
+
+  if (chartPlatitInst) chartPlatitInst.destroy();
+  chartPlatitInst = new Chart(document.getElementById('chartPlatit'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: platitData, backgroundColor: '#22c55e', borderRadius: 5, borderSkipped: false }]
+    },
+    options: { ...commonOpts }
+  });
+
+  if (chartDeAchitatInst) chartDeAchitatInst.destroy();
+  chartDeAchitatInst = new Chart(document.getElementById('chartDeAchitat'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: deAchitatData, backgroundColor: '#f87171', borderRadius: 5, borderSkipped: false }]
+    },
+    options: { ...commonOpts }
+  });
 }
 
 function initCalendar() {
