@@ -688,8 +688,19 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 <!-- PLĂȚI CALENDAR SECTION -->
 <div id="sec-plati" style="display:none">
 
+  <!-- SOLD BANCAR PROGNOZA -->
+  <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:8px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;color:#475569;font-weight:600;white-space:nowrap">Sold curent RON:</span>
+    <input id="soldBancar" type="number" placeholder="ex: 500000" oninput="renderSoldPrognoza()"
+      style="width:140px;border:1px solid #cbd5e1;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:600;outline:none;color:#0f172a">
+    <div id="soldPrognoza" style="flex:1;min-width:0"></div>
+  </div>
+
   <!-- CASH COMMITMENT 90 ZILE KPI -->
   <div id="cashCommitment90" style="margin:0 0 0 0;"></div>
+
+  <!-- URMĂRĂTOAREA PLATĂ -->
+  <div id="nextPaymentCard" style="padding:0 20px 0"></div>
 
   <div class="plati-main-layout">
     <!-- LEFT CHART -->
@@ -1442,6 +1453,9 @@ function renderOrders() {
     const curs      = parseFloat(o.curs)         || 4.5;
     const nrTr      = (o.transe || []).length;
     const val       = parseFloat(o.valoare)      || 0;
+    const paid      = (parseFloat(o.avans)||0) + (o.transe||[]).reduce((s,t)=>s+(parseFloat(t.suma)||0),0);
+    const paidPct   = val > 0 ? Math.min(100, paid/val*100) : 0;
+    const pColor    = paidPct >= 100 ? '#16a34a' : paidPct >= 50 ? '#2563eb' : '#f59e0b';
     const transport = parseFloat(o.transport)    || 0;
     const taxPct    = parseFloat(o.taxVamalaPct) || 0;
     const tvaPct    = parseFloat(o.tvaPct)       || 21;
@@ -1460,7 +1474,15 @@ function renderOrders() {
     return `
     <tr class="ord-row-main" id="orow-${i}">
       <td class="td-toggle" onclick="toggleDetail(${i})" title="Detalii costuri"><i class="toggle-icon">▶</i></td>
-      <td class="td-prod">${o.produs || '—'}${o.containere ? `<span style="font-weight:400;color:var(--text3);font-size:11px;margin-left:6px">${o.containere} cont.</span>` : ''}</td>
+      <td class="td-prod">
+        <div>${o.produs || '—'}${o.containere ? `<span style="font-weight:400;color:var(--text3);font-size:11px;margin-left:6px">${o.containere} cont.</span>` : ''}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:5px">
+          <div style="flex:1;height:3px;background:#e2e8f0;border-radius:2px;max-width:120px">
+            <div style="height:3px;background:${pColor};width:${paidPct}%;border-radius:2px"></div>
+          </div>
+          <span style="font-size:10px;color:#64748b;white-space:nowrap">${paidPct.toFixed(0)}% plătit</span>
+        </div>
+      </td>
       <td style="font-size:12px">${o.furnizor || '—'}</td>
       <td style="font-size:11.5px;color:var(--text3)">${o.factura || '—'}</td>
       <td class="td-num">${fmtUsd(o.valoare)}</td>
@@ -1468,7 +1490,7 @@ function renderOrders() {
       <td style="font-size:11.5px">${fmtDate(o.dataAvans)}</td>
       <td style="font-size:11.5px">${fmtDate(o.dataInc)}</td>
       <td class="td-num" style="color:${restColor};font-weight:700">${fmtUsd(rest)}</td>
-      <td style="font-size:11.5px">${fmtDateHighlight(o.dataDif)}</td>
+      <td style="font-size:11.5px">${fmtDateHighlight(o.dataDif)}${daysCount(o.dataDif)}</td>
       <td class="td-ron">${ rf(rest, curs)}</td>
       <td><span class="status-badge ${css}">${o.status}</span></td>
       <td class="td-act" style="white-space:nowrap;gap:4px;display:flex">${btnPay}${btnEdit}${btnDel}</td>
@@ -1787,7 +1809,7 @@ function switchTab(tab, btn) {
   document.getElementById('sec-plati').style.display    = tab === 'plati'    ? '' : 'none';
   document.querySelector('.yr-group').style.display = tab === 'cashflow' ? '' : 'none';
   if (tab === 'comenzi') renderOrders();
-  if (tab === 'plati')   { initCalendar(); renderPayCharts(); renderCashCommitment90(); }
+  if (tab === 'plati')   { initCalendar(); renderPayCharts(); renderCashCommitment90(); renderNextPayment(); renderSoldPrognoza(); }
 }
 
 /* ═══════════════════════════════════════
@@ -1829,6 +1851,103 @@ function collectPayments() {
     (o.transe || []).forEach(t => add(t.data, 'transa', o.produs, t.suma, o.curs));
   });
   return events;
+}
+
+/* ── DAYS BADGE ── */
+function daysCount(dateStr) {
+  if (!dateStr) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  const days = Math.round((d - today) / 86400000);
+  if (days < 0)  return `<span style="background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:5px">${Math.abs(days)}z RESTANT</span>`;
+  if (days === 0) return `<span style="background:#fff7ed;color:#ea580c;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:5px">AZI</span>`;
+  if (days <= 7)  return `<span style="background:#fff7ed;color:#ea580c;font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;margin-left:5px">${days}z!</span>`;
+  if (days <= 30) return `<span style="background:#eff6ff;color:#2563eb;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:5px">${days}z</span>`;
+  return `<span style="font-size:9px;color:#94a3b8;margin-left:5px">${days}z</span>`;
+}
+
+/* ── SOLD BANCAR PROGNOZĂ ── */
+function renderSoldPrognoza() {
+  const sold = parseFloat(document.getElementById('soldBancar').value) || 0;
+  const el = document.getElementById('soldPrognoza');
+  if (!sold) { el.innerHTML = '<span style="font-size:11px;color:#94a3b8">Introdu soldul pentru prognoză</span>'; return; }
+
+  const events = collectPayments();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d90 = new Date(today); d90.setDate(d90.getDate() + 90);
+  const todayStr = today.toISOString().slice(0,10);
+  const d90Str = d90.toISOString().slice(0,10);
+  const MO = ['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'];
+
+  const byMonth = {};
+  Object.entries(events).forEach(([dateStr, list]) => {
+    if (dateStr < todayStr || dateStr > d90Str) return;
+    const d = new Date(dateStr);
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    if (!byMonth[key]) byMonth[key] = { ron: 0 };
+    list.forEach(ev => { byMonth[key].ron += ev.usd * (parseFloat(ev.curs) || 4.97); });
+  });
+
+  const parts = [`<span style="font-size:11px;color:#475569">Acum: <strong style="color:#0f172a">${(sold/1000).toFixed(0)}k RON</strong></span>`];
+  let balance = sold;
+  Object.entries(byMonth).sort(([a],[b]) => a.localeCompare(b)).forEach(([key, data]) => {
+    balance -= data.ron;
+    const [yr, mo] = key.split('-');
+    const label = MO[parseInt(mo)-1] + "'" + yr.slice(2);
+    const color = balance < 0 ? '#dc2626' : balance < 150000 ? '#d97706' : '#16a34a';
+    const warn = balance < 0 ? ' ⚠' : '';
+    parts.push(`<span style="font-size:11px;color:#94a3b8">▸</span><span style="font-size:11px;color:#64748b">${label}: <strong style="color:${color}">${(balance/1000).toFixed(0)}k RON${warn}</strong></span>`);
+  });
+  el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${parts.join('')}</div>`;
+}
+
+/* ── URMĂRĂTOAREA PLATĂ ── */
+function renderNextPayment() {
+  const el = document.getElementById('nextPaymentCard');
+  if (!el) return;
+  const events = collectPayments();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().slice(0,10);
+
+  const sorted = Object.entries(events)
+    .filter(([d]) => d >= todayStr)
+    .sort(([a],[b]) => a.localeCompare(b));
+
+  if (!sorted.length) { el.innerHTML = ''; return; }
+
+  const [nextDate, items] = sorted[0];
+  const d = new Date(nextDate); d.setHours(0,0,0,0);
+  const days = Math.round((d - today) / 86400000);
+  const totalUsd = items.reduce((s,i) => s + i.usd, 0);
+  const avgCurs  = items.reduce((s,i) => s + (parseFloat(i.curs)||4.97), 0) / items.length;
+
+  const urgColor = days === 0 ? '#dc2626' : days <= 7 ? '#ea580c' : '#2563eb';
+  const dayLabel = days === 0 ? 'AZI' : days === 1 ? 'MÂINE' : `${days} zile`;
+
+  const itemsHtml = items.slice(0,4).map(i =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border-radius:4px;padding:2px 7px;font-size:10px;color:#475569">
+      <span style="font-weight:600">${i.produs.split(' ')[0]}</span>
+      <span style="color:#94a3b8">·</span>${TYPE_LABELS[i.type]}
+      <span style="color:#94a3b8">·</span><strong>$${Math.round(i.usd).toLocaleString('ro-RO')}</strong>
+    </span>`
+  ).join('');
+  const moreHtml = items.length > 4 ? `<span style="font-size:10px;color:#94a3b8">+${items.length-4} mai multe</span>` : '';
+
+  el.innerHTML = `<div style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid ${urgColor};border-radius:0 8px 8px 0;padding:12px 18px;margin:10px 0 0 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <div style="text-align:center;min-width:56px">
+      <div style="font-size:${days<=9?'26px':'20px'};font-weight:800;color:${urgColor};line-height:1">${dayLabel}</div>
+      ${days>1?'<div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em">PÂNĂ LA PLATĂ</div>':''}
+    </div>
+    <div style="width:1px;height:36px;background:#e2e8f0;flex-shrink:0"></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Scadent — ${fmtDate(nextDate)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${itemsHtml}${moreHtml}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:20px;font-weight:800;color:#0f172a">$${Math.round(totalUsd).toLocaleString('ro-RO')}</div>
+      <div style="font-size:11px;color:#64748b">${Math.round(totalUsd * avgCurs).toLocaleString('ro-RO')} RON</div>
+    </div>
+  </div>`;
 }
 
 /* ── CASH COMMITMENT 90 ZILE ── */
