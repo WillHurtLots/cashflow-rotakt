@@ -320,6 +320,86 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 .pnav-btn:hover { color: var(--brand); }
 .pnav-btn.active { color: var(--brand); border-bottom-color: var(--brand); }
 
+/* ── CALENDAR ── */
+.cal-wrap { padding: 16px 20px; max-width: 1200px; margin: 0 auto; }
+.cal-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 14px; flex-wrap: wrap;
+}
+.cal-title { font-size: 18px; font-weight: 800; color: var(--text); min-width: 200px; text-align: center; }
+.cal-nav {
+  background: var(--white); border: 1px solid var(--border); border-radius: 7px;
+  padding: 6px 14px; font-size: 16px; cursor: pointer; color: var(--brand);
+  transition: .15s;
+}
+.cal-nav:hover { background: var(--brand); color: #fff; }
+.cal-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.leg-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 2px; background: var(--border); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden; margin-bottom: 20px;
+}
+.cal-dow {
+  background: var(--header-bg); color: rgba(255,255,255,.7);
+  text-align: center; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em; padding: 8px 4px;
+}
+.cal-day {
+  background: #fff; min-height: 90px; padding: 4px;
+  cursor: default; position: relative; transition: .15s;
+}
+.cal-day.other-month { background: #f8fafc; }
+.cal-day.today { background: #eff6ff; }
+.cal-day.today .cal-day-num { color: var(--brand); font-weight: 800; }
+.cal-day.has-events { cursor: pointer; }
+.cal-day.has-events:hover { background: #f0f7ff; }
+.cal-day.selected { background: #dbeafe; outline: 2px solid var(--brand); }
+.cal-day-num {
+  font-size: 12px; font-weight: 600; color: var(--text3);
+  margin-bottom: 2px;
+}
+.cal-event {
+  font-size: 10px; font-weight: 600; padding: 2px 5px; border-radius: 3px;
+  margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer; color: #fff; line-height: 1.4;
+}
+.cal-event.type-rest   { background: #1e40af; }
+.cal-event.type-tax    { background: #065f46; }
+.cal-event.type-tva    { background: #1d4ed8; }
+.cal-event.type-transp { background: #92400e; }
+.cal-event.type-transa { background: #6b21a8; }
+.cal-more { font-size: 10px; color: var(--brand); font-weight: 700; padding: 1px 3px; }
+
+.cal-list-wrap {
+  background: var(--white); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden;
+}
+.cal-list-title {
+  background: var(--header-bg); color: #fff; padding: 10px 16px;
+  font-size: 13px; font-weight: 700;
+}
+.cal-list-item {
+  display: grid; grid-template-columns: 28px 1fr auto auto auto;
+  gap: 0 12px; align-items: center;
+  padding: 10px 16px; border-bottom: 1px solid var(--border-light);
+  font-size: 12.5px;
+}
+.cal-list-item:last-child { border-bottom: none; }
+.cal-list-item:hover { background: #f8faff; }
+.cal-list-dot { width: 10px; height: 10px; border-radius: 50%; }
+.cal-list-prod { font-weight: 600; color: var(--text); }
+.cal-list-type { color: var(--text3); font-size: 11px; }
+.cal-list-date { color: var(--text2); font-size: 12px; font-variant-numeric: tabular-nums; }
+.cal-list-amt  { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; color: var(--brand-dark); }
+.cal-list-ron  { font-size: 11px; color: var(--text3); text-align: right; }
+.cal-empty { text-align: center; padding: 40px; color: var(--text3); font-size: 13px; }
+.cal-list-past { opacity: .5; }
+.cal-list-urgent .cal-list-date { color: var(--red); font-weight: 700; }
+.cal-list-soon  .cal-list-date  { color: #d97706; font-weight: 700; }
+
 /* ── ORDERS SECTION ── */
 .orders-wrap { padding: 16px; }
 .orders-topbar {
@@ -582,6 +662,30 @@ tr.row-total td.col-total   { background: #bfdbfe !important; color: var(--brand
 <div class="page-nav">
   <button class="pnav-btn active" onclick="switchTab('cashflow',this)">Cashflow</button>
   <button class="pnav-btn" onclick="switchTab('comenzi',this)">Status Comenzi</button>
+  <button class="pnav-btn" onclick="switchTab('plati',this)">Plăți</button>
+</div>
+
+<!-- PLĂȚI CALENDAR SECTION -->
+<div id="sec-plati" style="display:none">
+  <div class="cal-wrap">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calMove(-1)">&#8592;</button>
+      <div class="cal-title" id="calTitle"></div>
+      <button class="cal-nav" onclick="calMove(1)">&#8594;</button>
+      <div class="cal-legend">
+        <span class="leg-item"><span class="leg-dot" style="background:#1e40af"></span>Rest Comandă</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#065f46"></span>Taxă Vamală</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#1d4ed8"></span>TVA</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#92400e"></span>Transport</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#6b21a8"></span>Tranșă</span>
+      </div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-list-wrap">
+      <div class="cal-list-title" id="calListTitle"></div>
+      <div id="calList"></div>
+    </div>
+  </div>
 </div>
 
 <!-- CASHFLOW SECTION -->
@@ -1639,19 +1743,179 @@ function deleteTransa(ti) {
 function switchTab(tab, btn) {
   document.querySelectorAll('.pnav-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  const cf = document.getElementById('sec-cashflow');
-  const co = document.getElementById('sec-comenzi');
-  const yrGroup = document.querySelector('.yr-group');
-  if (tab === 'cashflow') {
-    cf.style.display = '';
-    co.style.display = 'none';
-    yrGroup.style.display = '';
-  } else {
-    cf.style.display = 'none';
-    co.style.display = '';
-    yrGroup.style.display = 'none';
-    renderOrders();
+  document.getElementById('sec-cashflow').style.display = tab === 'cashflow' ? '' : 'none';
+  document.getElementById('sec-comenzi').style.display  = tab === 'comenzi'  ? '' : 'none';
+  document.getElementById('sec-plati').style.display    = tab === 'plati'    ? '' : 'none';
+  document.querySelector('.yr-group').style.display = tab === 'cashflow' ? '' : 'none';
+  if (tab === 'comenzi') renderOrders();
+  if (tab === 'plati')   initCalendar();
+}
+
+/* ═══════════════════════════════════════
+   CALENDAR PLĂȚI
+═══════════════════════════════════════ */
+const DOW = ['Lun','Mar','Mie','Joi','Vin','Sâm','Dum'];
+const MONTHS_RO = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
+let calYear, calMonth, calSelected = null;
+
+const TYPE_COLORS = {
+  rest: '#1e40af', tax: '#065f46', tva: '#1d4ed8', transp: '#92400e', transa: '#6b21a8'
+};
+const TYPE_LABELS = {
+  rest: 'Rest Comandă', tax: 'Taxă Vamală', tva: 'TVA', transp: 'Transport', transa: 'Tranșă'
+};
+
+/* Colectează toate plățile din orders ca events {date, type, produs, usd, curs} */
+function collectPayments() {
+  const events = {};
+  const add = (dateStr, type, produs, usd, curs) => {
+    if (!dateStr) return;
+    if (!events[dateStr]) events[dateStr] = [];
+    events[dateStr].push({ type, produs, usd: parseFloat(usd)||0, curs: parseFloat(curs)||4.5 });
+  };
+
+  orders.forEach(o => {
+    const val  = parseFloat(o.valoare)      || 0;
+    const tr   = parseFloat(o.transport)    || 0;
+    const taxP = parseFloat(o.taxVamalaPct) || 0;
+    const tvaP = parseFloat(o.tvaPct)       || 21;
+    const taxV = (val + tr) * taxP / 100;
+    const tvaV = (val + tr + taxV) * tvaP / 100;
+    const rest = restCurrent(o);
+
+    add(o.dataDif,           'rest',   o.produs, rest, o.curs);
+    add(addDays(o.dataDif, 60), 'tax', o.produs, taxV, o.curs);
+    add(addDays(o.dataDif, 60), 'tva', o.produs, tvaV, o.curs);
+    add(addDays(o.dataDif, 90), 'transp', o.produs, tr, o.curs);
+    (o.transe || []).forEach(t => add(t.data, 'transa', o.produs, t.suma, o.curs));
+  });
+  return events;
+}
+
+function initCalendar() {
+  const now = new Date();
+  calYear  = calYear  || now.getFullYear();
+  calMonth = calMonth !== undefined ? calMonth : now.getMonth();
+  renderCalendar();
+}
+
+function calMove(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  calSelected = null;
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('calTitle').textContent = MONTHS_RO[calMonth] + ' ' + calYear;
+  const events = collectPayments();
+  const today  = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().slice(0,10);
+
+  /* Build days array — start from Monday */
+  const first = new Date(calYear, calMonth, 1);
+  let startDow = first.getDay(); // 0=Sun
+  startDow = startDow === 0 ? 6 : startDow - 1; // shift to Mon=0
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+
+  let html = DOW.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  /* Empty cells before month start */
+  const prevDays = new Date(calYear, calMonth, 0).getDate();
+  for (let i = 0; i < startDow; i++) {
+    const d = prevDays - startDow + 1 + i;
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${d}</div></div>`;
   }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const mm  = String(calMonth+1).padStart(2,'0');
+    const dd  = String(d).padStart(2,'0');
+    const key = `${calYear}-${mm}-${dd}`;
+    const evs = events[key] || [];
+    const isToday   = key === todayStr;
+    const isSelected= key === calSelected;
+    const hasEv     = evs.length > 0;
+
+    let cls = 'cal-day';
+    if (isToday)    cls += ' today';
+    if (hasEv)      cls += ' has-events';
+    if (isSelected) cls += ' selected';
+
+    const shown = evs.slice(0, 2);
+    const more  = evs.length - 2;
+    const evHtml = shown.map(e =>
+      `<div class="cal-event type-${e.type}" title="${e.produs} — ${fmtUsd(e.usd)}">${e.produs.slice(0,18)}</div>`
+    ).join('') + (more > 0 ? `<div class="cal-more">+${more} mai multe</div>` : '');
+
+    html += `<div class="${cls}" onclick="${hasEv ? `selectDay('${key}')` : ''}">
+      <div class="cal-day-num">${d}</div>${evHtml}</div>`;
+  }
+
+  /* Fill remaining cells */
+  const total = startDow + daysInMonth;
+  const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= rem; i++) {
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+  renderPayList(calSelected, events);
+}
+
+function selectDay(key) {
+  calSelected = calSelected === key ? null : key;
+  renderCalendar();
+}
+
+function renderPayList(filterDate, events) {
+  const listEl  = document.getElementById('calList');
+  const titleEl = document.getElementById('calListTitle');
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const curs    = 4.5;
+
+  let items = [];
+  const src = filterDate
+    ? (events[filterDate] ? { [filterDate]: events[filterDate] } : {})
+    : events;
+
+  Object.entries(src).sort(([a],[b]) => a.localeCompare(b)).forEach(([date, evs]) => {
+    evs.forEach(e => items.push({ date, ...e }));
+  });
+
+  if (filterDate) {
+    titleEl.textContent = `Plăți pe ${fmtDate(filterDate)}`;
+  } else {
+    titleEl.textContent = `Toate plățile — ${MONTHS_RO[calMonth]} ${calYear}`;
+    const mm = String(calMonth+1).padStart(2,'0');
+    items = items.filter(i => i.date.startsWith(`${calYear}-${mm}`));
+  }
+
+  if (!items.length) {
+    listEl.innerHTML = `<div class="cal-empty">Nicio plată înregistrată${filterDate ? ' în această zi' : ' în această lună'}.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = items.map(item => {
+    const d = new Date(item.date); d.setHours(0,0,0,0);
+    const diff = Math.ceil((d - today) / 86400000);
+    let rowCls = 'cal-list-item';
+    if (diff < 0)  rowCls += ' cal-list-past cal-list-urgent';
+    else if (diff <= 7)  rowCls += ' cal-list-soon';
+    else if (diff < 0)   rowCls += ' cal-list-urgent';
+    const ron = ronCalcNum(item.usd, item.curs);
+    const urgTag = diff < 0 ? ' ⚠' : diff <= 7 ? ' !' : '';
+    return `<div class="${rowCls}">
+      <div><span class="cal-list-dot" style="background:${TYPE_COLORS[item.type]}"></span></div>
+      <div>
+        <div class="cal-list-prod">${item.produs}</div>
+        <div class="cal-list-type">${TYPE_LABELS[item.type]}</div>
+      </div>
+      <div class="cal-list-date">${fmtDate(item.date)}${urgTag}</div>
+      <div class="cal-list-amt">${fmtUsd(item.usd)}</div>
+      <div class="cal-list-ron">${ron > 0 ? ron.toFixed(1) + ' mii' : '—'}</div>
+    </div>`;
+  }).join('');
 }
 </script>
 </body>
