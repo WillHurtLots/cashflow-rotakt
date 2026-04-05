@@ -1541,6 +1541,13 @@ function renderOrders() {
               <div class="odg-cell tot-ron" style="text-align:right">${totalRon.toFixed(2)} mii</div>
             </div>
           </div>
+          <!-- EXPECTED DELIVERY -->
+          <div style="margin-top:10px;padding:8px 12px;background:#eff6ff;border-radius:6px;border-left:3px solid #2563eb;display:flex;align-items:center;gap:10px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span style="font-size:11px;font-weight:600;color:#1e40af;text-transform:uppercase;letter-spacing:.05em">Data estimată recepție depozit:</span>
+            <span style="font-size:13px;font-weight:800;color:#1e3a8a">${fmtDate(dataTax)}</span>
+            ${(() => { const dd=new Date(dataTax); dd.setHours(0,0,0,0); const tz=new Date(); tz.setHours(0,0,0,0); const diff=Math.round((dd-tz)/86400000); return diff<0?`<span style="font-size:10px;background:#fee2e2;color:#dc2626;padding:1px 7px;border-radius:3px;font-weight:700">${Math.abs(diff)}z RESTANT</span>`:diff===0?`<span style="font-size:10px;background:#fff7ed;color:#ea580c;padding:1px 7px;border-radius:3px;font-weight:700">AZI</span>`:`<span style="font-size:10px;color:#2563eb">în ${diff} zile</span>`; })()}
+          </div>
         </div>
       </td>
     </tr>
@@ -1959,121 +1966,143 @@ function renderNextPayment() {
 }
 
 /* ── RECEPȚIE DEPOZIT ── */
+let depCalYear, depCalMonth;
+
 function renderDepozit() {
   const el = document.getElementById('depozitContent');
   if (!el) return;
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const todayStr = today.toISOString().slice(0,10);
+  if (!depCalYear)  { depCalYear = today.getFullYear(); depCalMonth = today.getMonth(); }
 
-  // Filtrăm comenzile care nu sunt lichidate
   const active = orders.filter(o => o.status !== 'Lichidat' && o.dataDif);
-
-  // Data estimată livrare = dataDif + 60 zile (= data plată taxă vamală/TVA)
   const items = active.map(o => {
     const livrare = addDays(o.dataDif, 60);
     const d = new Date(livrare); d.setHours(0,0,0,0);
     const days = Math.round((d - today) / 86400000);
-    const val = parseFloat(o.valoare) || 0;
-    const tr  = parseFloat(o.transport) || 0;
-    const taxP = parseFloat(o.taxVamalaPct) || 0;
-    const tvaP = parseFloat(o.tvaPct) || 21;
-    const taxV = (val + tr) * taxP / 100;
-    const tvaV = (val + tr + taxV) * tvaP / 100;
-    const totalOblig = restCurrent(o) + taxV + tvaV + tr;
-    const curs = parseFloat(o.curs) || 4.97;
-    return { o, livrare, days, totalOblig, curs };
-  }).sort((a, b) => a.livrare.localeCompare(b.livrare));
+    const STATUS_CSS_MAP = { 'Comandat':'#64748b','În Tranzit':'#2563eb','Vamă':'#d97706','Livrat':'#16a34a','Lichidat':'#16a34a' };
+    return { o, livrare, days, stColor: STATUS_CSS_MAP[o.status] || '#64748b' };
+  }).sort((a,b) => a.livrare.localeCompare(b.livrare));
 
   if (!items.length) {
-    el.innerHTML = '<p style="color:#94a3b8;padding:40px;text-align:center">Nu există comenzi active cu dată de plată diferență setată.</p>';
+    el.innerHTML = '<p style="color:#94a3b8;padding:40px;text-align:center">Nu există comenzi active cu dată DIF setată.</p>';
     return;
   }
 
-  // KPI-uri sumare
-  const sosite    = items.filter(x => x.days < 0);
-  const azi7      = items.filter(x => x.days >= 0 && x.days <= 7);
-  const luna30    = items.filter(x => x.days >= 0 && x.days <= 30);
-  const viitoare  = items.filter(x => x.days > 30);
+  // KPI strip
+  const sosite   = items.filter(x => x.days < 0).length;
+  const azi7     = items.filter(x => x.days >= 0 && x.days <= 7).length;
+  const luna30   = items.filter(x => x.days >= 0 && x.days <= 30).length;
+  const viitoare = items.filter(x => x.days > 30).length;
 
-  const kpiHtml = `
-    <div style="display:flex;gap:1px;background:#e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      ${[
-        { label:'Total comenzi active', val: items.length, sub: 'comenzi urmărite', bg:'#fff', color:'#0f172a' },
-        { label:'Întârziate / ajunse', val: sosite.length, sub: 'depășit data estimată', bg:'#fef2f2', color:'#dc2626' },
-        { label:'Această săptămână', val: azi7.length, sub: '0–7 zile', bg:'#fff7ed', color:'#ea580c' },
-        { label:'Această lună', val: luna30.length, sub: '0–30 zile', bg:'#eff6ff', color:'#2563eb' },
-        { label:'Ulterior', val: viitoare.length, sub: '> 30 zile', bg:'#f0fdf4', color:'#16a34a' },
-      ].map(k => `
-        <div style="flex:1;background:${k.bg};padding:16px 20px">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:6px">${k.label}</div>
-          <div style="font-size:28px;font-weight:800;color:${k.color};line-height:1">${k.val}</div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:3px">${k.sub}</div>
-        </div>`).join('')}
-    </div>`;
+  const kpiHtml = `<div style="display:flex;gap:1px;background:#e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+    ${[
+      {l:'Total active',     v:items.length, bg:'#fff',     c:'#0f172a'},
+      {l:'Întârziate',       v:sosite,       bg:'#fef2f2',  c:'#dc2626'},
+      {l:'Această săptămână',v:azi7,         bg:'#fff7ed',  c:'#ea580c'},
+      {l:'Această lună',     v:luna30,       bg:'#eff6ff',  c:'#2563eb'},
+      {l:'Ulterior',         v:viitoare,     bg:'#f0fdf4',  c:'#16a34a'},
+    ].map(k=>`<div style="flex:1;background:${k.bg};padding:12px 16px">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin-bottom:4px">${k.l}</div>
+      <div style="font-size:24px;font-weight:800;color:${k.c};line-height:1">${k.v}</div>
+    </div>`).join('')}
+  </div>`;
 
-  // Timeline cu cards pe grupuri: Întârziate, Săpt. aceasta, Luna aceasta, Următor
+  // ── CALENDAR RECEPȚII ──
+  const calDays = ['L','M','M','J','V','S','D'];
+  const calFirst = new Date(depCalYear, depCalMonth, 1);
+  const calLast  = new Date(depCalYear, depCalMonth+1, 0);
+  const startDow = (calFirst.getDay() + 6) % 7; // 0=Lun
+  const livrareDateMap = {};
+  items.forEach(({o, livrare}) => {
+    if (!livrareDateMap[livrare]) livrareDateMap[livrare] = [];
+    livrareDateMap[livrare].push(o.produs);
+  });
+
+  let calCells = calDays.map(d => `<div style="text-align:center;font-size:10px;font-weight:700;color:#94a3b8;padding:4px">${d}</div>`).join('');
+  for (let i=0; i<startDow; i++) calCells += `<div></div>`;
+  const todayStr2 = today.toISOString().slice(0,10);
+  for (let day=1; day<=calLast.getDate(); day++) {
+    const dateStr = `${depCalYear}-${String(depCalMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr2;
+    const hasLiv  = livrareDateMap[dateStr];
+    let cell = `<div style="min-height:52px;border-radius:6px;padding:3px 4px;border:1px solid ${isToday?'#2563eb':'#f1f5f9'};background:${isToday?'#eff6ff':hasLiv?'#f0fdf4':'#fafafa'};position:relative">
+      <div style="font-size:11px;font-weight:${isToday?700:400};color:${isToday?'#1d4ed8':'#64748b'}">${day}</div>`;
+    if (hasLiv) {
+      cell += hasLiv.slice(0,2).map(p=>`<div style="font-size:9px;background:#dcfce7;color:#166534;border-radius:3px;padding:1px 3px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">${p.split(' ')[0]}</div>`).join('');
+      if (hasLiv.length > 2) cell += `<div style="font-size:8px;color:#16a34a;margin-top:1px">+${hasLiv.length-2}</div>`;
+    }
+    cell += `</div>`;
+    calCells += cell;
+  }
+
+  const calHtml = `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.04)">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <button onclick="depCalMove(-1)" style="background:#f1f5f9;border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;color:#475569">‹</button>
+      <span style="font-size:14px;font-weight:700;color:#0f172a;min-width:160px;text-align:center">${MONTHS_RO[depCalMonth]} ${depCalYear} — Recepții Estimat</span>
+      <button onclick="depCalMove(1)"  style="background:#f1f5f9;border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;color:#475569">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${calCells}</div>
+  </div>`;
+
+  // ── CARDS GRID 3 COLOANE ──
   const groups = [
-    { label: 'Întârziate / ajunse în depozit', items: sosite,   accent: '#dc2626', bg: '#fef2f2' },
-    { label: 'Această săptămână (0–7 zile)',   items: azi7,     accent: '#ea580c', bg: '#fff7ed' },
-    { label: 'Această lună (8–30 zile)',        items: luna30.filter(x => x.days > 7), accent: '#2563eb', bg: '#eff6ff' },
-    { label: 'Ulterior (> 30 zile)',            items: viitoare, accent: '#16a34a', bg: '#f0fdf4' },
-  ].filter(g => g.items.length > 0);
+    { label:'Întârziate',          items: items.filter(x=>x.days<0),                      accent:'#dc2626', bg:'#fef2f2' },
+    { label:'Această săptămână',   items: items.filter(x=>x.days>=0&&x.days<=7),           accent:'#ea580c', bg:'#fff7ed' },
+    { label:'Această lună',        items: items.filter(x=>x.days>7&&x.days<=30),           accent:'#2563eb', bg:'#eff6ff' },
+    { label:'Ulterior',            items: items.filter(x=>x.days>30),                      accent:'#16a34a', bg:'#f0fdf4' },
+  ].filter(g=>g.items.length>0);
 
-  const timelineHtml = groups.map(g => `
-    <div style="margin-bottom:28px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-        <div style="width:4px;height:20px;background:${g.accent};border-radius:2px"></div>
-        <h3 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${g.accent}">${g.label}</h3>
+  const cardsHtml = groups.map(g=>`
+    <div style="margin-bottom:22px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:3px;height:16px;background:${g.accent};border-radius:2px"></div>
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${g.accent}">${g.label}</span>
         <div style="flex:1;height:1px;background:#e2e8f0"></div>
-        <span style="font-size:11px;color:#94a3b8">${g.items.length} comandă${g.items.length!==1?'i':''}</span>
+        <span style="font-size:10px;color:#94a3b8">${g.items.length} comenzi</span>
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        ${g.items.map(({ o, livrare, days, totalOblig, curs }) => {
-          const paidAmt = (parseFloat(o.avans)||0) + (o.transe||[]).reduce((s,t)=>s+(parseFloat(t.suma)||0),0);
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        ${g.items.map(({o, livrare, days, stColor})=>{
+          const paidAmt = (parseFloat(o.avans)||0)+(o.transe||[]).reduce((s,t)=>s+(parseFloat(t.suma)||0),0);
           const val = parseFloat(o.valoare)||0;
-          const pct = val > 0 ? Math.min(100, paidAmt/val*100) : 0;
-          const pColor = pct >= 100 ? '#16a34a' : pct >= 50 ? '#2563eb' : '#f59e0b';
-          const dayLabel = days < 0
-            ? `<span style="background:#fef2f2;color:#dc2626;font-weight:700;padding:2px 8px;border-radius:4px;font-size:11px">${Math.abs(days)} zile întârziere</span>`
-            : days === 0
-            ? `<span style="background:#fff7ed;color:#ea580c;font-weight:700;padding:2px 8px;border-radius:4px;font-size:11px">AZI</span>`
-            : `<span style="background:${g.bg};color:${g.accent};font-weight:700;padding:2px 8px;border-radius:4px;font-size:11px">${days} zile</span>`;
-          const STATUS_CSS_MAP = { 'Comandat':'#64748b','În Tranzit':'#2563eb','Vamă':'#d97706','Livrat':'#16a34a','Lichidat':'#16a34a' };
-          const stColor = STATUS_CSS_MAP[o.status] || '#64748b';
-          return `
-          <div style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid ${g.accent};border-radius:0 10px 10px 0;padding:16px 20px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center">
-            <div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-                <span style="font-size:14px;font-weight:700;color:#0f172a">${o.produs || '—'}</span>
-                <span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:3px;background:${stColor}20;color:${stColor}">${o.status}</span>
-                ${o.furnizor ? `<span style="font-size:11px;color:#94a3b8">${o.furnizor}</span>` : ''}
-                ${o.containere ? `<span style="font-size:11px;color:#94a3b8">${o.containere} cont.</span>` : ''}
-              </div>
-              <div style="display:flex;align-items:center;gap:24px;font-size:11px;color:#475569;flex-wrap:wrap">
-                <span>Data DIF: <strong>${fmtDate(o.dataDif)}</strong></span>
-                <span>Estimat livrare: <strong style="color:${g.accent}">${fmtDate(livrare)}</strong></span>
-                ${o.factura ? `<span>Factură: <strong>${o.factura}</strong></span>` : ''}
-              </div>
-              <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
-                <div style="flex:1;max-width:200px;height:4px;background:#e2e8f0;border-radius:2px">
-                  <div style="height:4px;width:${pct}%;background:${pColor};border-radius:2px;transition:width .3s"></div>
-                </div>
-                <span style="font-size:10px;color:#64748b">${pct.toFixed(0)}% plătit ($${Math.round(paidAmt).toLocaleString('ro-RO')} din $${Math.round(val).toLocaleString('ro-RO')})</span>
-              </div>
+          const pct = val>0 ? Math.min(100,paidAmt/val*100) : 0;
+          const pColor = pct>=100?'#16a34a':pct>=50?'#2563eb':'#f59e0b';
+          const dayBadge = days<0
+            ? `<span style="font-size:9px;background:#fef2f2;color:#dc2626;font-weight:700;padding:1px 6px;border-radius:3px">${Math.abs(days)}z restant</span>`
+            : days===0
+            ? `<span style="font-size:9px;background:#fff7ed;color:#ea580c;font-weight:700;padding:1px 6px;border-radius:3px">AZI</span>`
+            : `<span style="font-size:9px;background:${g.bg};color:${g.accent};font-weight:600;padding:1px 6px;border-radius:3px">${days}z</span>`;
+          return `<div style="background:#fff;border:1px solid #e2e8f0;border-top:3px solid ${g.accent};border-radius:0 0 8px 8px;padding:12px 14px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+              <span style="font-size:12px;font-weight:700;color:#0f172a;line-height:1.3;flex:1;margin-right:6px">${o.produs||'—'}</span>
+              ${dayBadge}
             </div>
-            <div style="text-align:right">
-              ${dayLabel}
-              <div style="font-size:18px;font-weight:800;color:#0f172a;margin-top:8px">$${Math.round(totalOblig).toLocaleString('ro-RO')}</div>
-              <div style="font-size:10px;color:#94a3b8">obligații rămase</div>
-              <div style="font-size:11px;color:#64748b;margin-top:2px">${Math.round(totalOblig*curs).toLocaleString('ro-RO')} RON</div>
+            <div style="font-size:10px;color:#94a3b8;margin-bottom:2px">${o.furnizor||''}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin:8px 0">
+              <span style="font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;background:${stColor}18;color:${stColor}">${o.status}</span>
+              ${o.containere?`<span style="font-size:9px;color:#94a3b8">${o.containere} cont.</span>`:''}
             </div>
+            <div style="font-size:10px;color:#475569;margin-bottom:8px">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <strong style="color:${g.accent}">${fmtDate(livrare)}</strong>
+            </div>
+            <div style="height:3px;background:#f1f5f9;border-radius:2px">
+              <div style="height:3px;width:${pct}%;background:${pColor};border-radius:2px"></div>
+            </div>
+            <div style="font-size:9px;color:#94a3b8;margin-top:3px">${pct.toFixed(0)}% plătit</div>
           </div>`;
         }).join('')}
       </div>
     </div>`).join('');
 
-  el.innerHTML = kpiHtml + timelineHtml;
+  el.innerHTML = kpiHtml + calHtml + cardsHtml;
+}
+
+function depCalMove(dir) {
+  depCalMonth += dir;
+  if (depCalMonth > 11) { depCalMonth = 0; depCalYear++; }
+  if (depCalMonth < 0)  { depCalMonth = 11; depCalYear--; }
+  renderDepozit();
 }
 
 /* ── CASH COMMITMENT 90 ZILE ── */
